@@ -1,0 +1,256 @@
+@import "tailwindcss";
+
+:root {
+  --background: #171717;
+  --foreground: #FFFFFF;
+  --card: #171717;
+  --card-foreground: #FFFFFF;
+  --popover: #171717;
+  --popover-foreground: #FFFFFF;
+  --primary: #FFFFFF;
+  --primary-foreground: #171717;
+  --secondary: #222222;
+  --secondary-foreground: #FFFFFF;
+  --muted: #222222;
+  --muted-foreground: #A8A8A8;
+  --accent: #FF4949;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF4949;
+  --destructive-foreground: #FFFFFF;
+  --border: #383838;
+  --input: #171717;
+  --ring: #FF4949;
+  --radius: 0px;
+}
+
+@theme {
+  --color-background: #171717;
+  --color-foreground: #FFFFFF;
+  
+  --color-card: #171717;
+  --color-card-foreground: #FFFFFF;
+  
+  --color-popover: #171717;
+  --color-popover-foreground: #FFFFFF;
+  
+  --color-primary: #FFFFFF;
+  --color-primary-foreground: #171717;
+  
+  --color-secondary: #222222;
+  --color-secondary-foreground: #FFFFFF;
+  
+  --color-muted: #222222;
+  --color-muted-foreground: #A8A8A8;
+  
+  --color-accent: #FF4949;
+  --color-accent-foreground: #FFFFFF;
+  
+  --color-destructive: #FF4949;
+  --color-destructive-foreground: #FFFFFF;
+  
+  --color-border: #383838;
+  --color-input: #171717;
+  --color-ring: #FF4949;
+
+  --radius-lg: 0px;
+  --radius-md: 0px;
+  --radius-sm: 0px;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+  --font-display: 'Anton', sans-serif;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--color-border);
+    border-radius: 0 !important;
+  }
+  
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Editorial Industrial Cards */
+.glass-panel,
+.paper-panel {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+}
+
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: var(--color-foreground);
+  background-image: none;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar - Editorial Industrial Style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+  border-left: 1px solid var(--color-border);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Form inputs */
+input, textarea, select {
+  border-radius: 0 !important;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-input);
+  color: var(--color-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent) !important;
+}
+
+button {
+  border-radius: 0 !important;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Typography System Tokens */
+.heading-hero {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 5vw + 1rem, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
+}
+
+.heading-page {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 2.5vw + 0.5rem, 2.75rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.heading-section {
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 1.5vw + 0.5rem, 1.875rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+
+.heading-card {
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 0.8vw + 0.5rem, 1.375rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+/* Button System Tokens */
+.btn-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 48px;
+  height: 52px;
+  padding: 0 1.75rem;
+  background-color: var(--color-foreground);
+  color: var(--color-background);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-foreground);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-hero-primary:hover {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #FFFFFF;
+  transform: translateY(-2px);
+}
+
+.btn-hero-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 48px;
+  height: 52px;
+  padding: 0 1.75rem;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-hero-secondary:hover {
+  border-color: var(--color-foreground);
+  color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+/* Subtle, low-contrast dark grey grid pattern for architectural backgrounds */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, #303030 1px, transparent 1px),
+    linear-gradient(to bottom, #303030 1px, transparent 1px);
+  background-size: 32px 32px;
+}
