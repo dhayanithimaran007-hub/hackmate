@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -20,6 +20,7 @@ import NotFoundPage from './pages/NotFoundPage';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
 
 function IntroAnimation({ onComplete }: { onComplete: () => void }) {
@@ -51,13 +52,15 @@ function IntroAnimation({ onComplete }: { onComplete: () => void }) {
 function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       className="flex-1 flex flex-col w-full"
     >
-      {children}
+      <ErrorBoundary>
+        {children}
+      </ErrorBoundary>
     </motion.div>
   );
 }
@@ -66,7 +69,7 @@ function AnimatedRoutes() {
   const location = useLocation();
   
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout" initial={false}>
       <Routes location={location} key={location.pathname}>
         {/* Public Routes */}
         <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
@@ -105,19 +108,25 @@ function App() {
     return false;
   });
 
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false);
+  }, []);
+
   return (
-    <AuthProvider>
-      <Router>
-        <AnimatePresence>
-          {showIntro && <IntroAnimation onComplete={() => setShowIntro(false)} key="intro" />}
-        </AnimatePresence>
-        
-        <div className="min-h-screen flex flex-col w-full bg-background">
-          <Navbar />
-          <AnimatedRoutes />
-        </div>
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <AnimatePresence>
+            {showIntro && <IntroAnimation onComplete={handleIntroComplete} key="intro" />}
+          </AnimatePresence>
+          
+          <div className="min-h-screen flex flex-col w-full bg-background">
+            <Navbar />
+            <AnimatedRoutes />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Activity, Zap, Search, Briefcase } from 'lucide-react';
+import { ArrowRight, Activity, Zap, Search, Briefcase, RotateCcw } from 'lucide-react';
 import { hackathonService } from '../services/hackathonService';
 import { applicationService } from '../services/applicationService';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshIndex, setRefreshIndex] = useState(0);
   
   const [stats, setStats] = useState({
     applicationsReceived: 0,
@@ -20,82 +21,151 @@ export default function DashboardPage() {
     pending: 0,
   });
 
+  const handleRetry = useCallback(() => {
+    setRefreshIndex(prev => prev + 1);
+  }, []);
+
   useEffect(() => {
-    async function loadData() {
-      if (!user) return;
+    let isSubscribed = true;
+
+    async function fetchDashboard() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
       try {
-        const [hacks, myApps] = await Promise.all([
+        const [hacksRes, myAppsRes] = await Promise.allSettled([
           hackathonService.getMyHackathons(user.id),
           applicationService.getMyApplications(user.id)
         ]);
-        
+
+        if (!isSubscribed) return;
+
+        const hacks = hacksRes.status === 'fulfilled' && Array.isArray(hacksRes.value) ? hacksRes.value : [];
+        const myApps = myAppsRes.status === 'fulfilled' && Array.isArray(myAppsRes.value) ? myAppsRes.value : [];
+
+        if (hacksRes.status === 'rejected') {
+          console.warn('[HackMate Dashboard] Failed to load my hackathons:', hacksRes.reason);
+        }
+        if (myAppsRes.status === 'rejected') {
+          console.warn('[HackMate Dashboard] Failed to load my applications:', myAppsRes.reason);
+        }
+
         setHackathons(hacks);
         setApplications(myApps);
 
         if (hacks.length > 0) {
-          const hackIds = hacks.map(h => h.id);
+          const hackIds = hacks.map((h: any) => h?.id).filter(Boolean);
           
-          const { count: appsCount } = await supabase
-            .from('applications')
-            .select('*', { count: 'exact', head: true })
-            .in('hackathon_id', hackIds);
-            
-          const { count: acceptedCount } = await supabase
-            .from('applications')
-            .select('*', { count: 'exact', head: true })
-            .in('hackathon_id', hackIds)
-            .eq('status', 'accepted');
+          if (hackIds.length > 0) {
+            try {
+              const [appsRes, accRes, pendRes] = await Promise.allSettled([
+                supabase
+                  .from('applications')
+                  .select('*', { count: 'exact', head: true })
+                  .in('hackathon_id', hackIds),
+                supabase
+                  .from('applications')
+                  .select('*', { count: 'exact', head: true })
+                  .in('hackathon_id', hackIds)
+                  .eq('status', 'accepted'),
+                supabase
+                  .from('applications')
+                  .select('*', { count: 'exact', head: true })
+                  .in('hackathon_id', hackIds)
+                  .eq('status', 'pending')
+              ]);
 
-          const { count: pendingCount } = await supabase
-            .from('applications')
-            .select('*', { count: 'exact', head: true })
-            .in('hackathon_id', hackIds)
-            .eq('status', 'pending');
+              if (isSubscribed) {
+                setStats({
+                  applicationsReceived: (appsRes.status === 'fulfilled' && appsRes.value.count) || 0,
+                  accepted: (accRes.status === 'fulfilled' && accRes.value.count) || 0,
+                  pending: (pendRes.status === 'fulfilled' && pendRes.value.count) || 0,
+                });
+              }
+            } catch (statsErr) {
+              console.warn('[HackMate Dashboard] Non-critical error fetching stats:', statsErr);
+            }
+          }
+        }
 
-          setStats({
-            applicationsReceived: appsCount || 0,
-            accepted: acceptedCount || 0,
-            pending: pendingCount || 0,
-          });
+        if (hacksRes.status === 'rejected' && myAppsRes.status === 'rejected') {
+          setError('Unable to load dashboard data. Please check your network connection.');
         }
       } catch (err: any) {
         console.error('Failed to load dashboard data', err);
-        setError(err.message || 'Failed to load dashboard data');
+        if (isSubscribed) {
+          setError(err?.message || 'Failed to load dashboard data');
+        }
       } finally {
-        setLoading(false);
+        if (isSubscribed) {
+          setLoading(false);
+        }
       }
     }
-    loadData();
-  }, [user]);
+
+    fetchDashboard();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [user, refreshIndex]);
 
   // Derived Metrics
-  const activeHackathons = hackathons.filter(h => h.status === 'OPEN').length;
-  const activeApplications = applications.filter(a => a.status === 'pending').length;
-  const acceptedApplicationsCount = applications.filter(a => a.status === 'accepted').length;
+  const activeHackathons = Array.isArray(hackathons) ? hackathons.filter(h => h && h.status === 'OPEN').length : 0;
+  const activeApplications = Array.isArray(applications) ? applications.filter(a => a && a.status === 'pending').length : 0;
+  const acceptedApplicationsCount = Array.isArray(applications) ? applications.filter(a => a && a.status === 'accepted').length : 0;
 
   const totalMatches = stats.accepted + acceptedApplicationsCount;
   
   // What Needs Attention Logic
   const totalIncomingApps = stats.pending; 
 
-  // Combine for timeline
-  const posterEvents = hackathons.map(h => ({
-    id: `hack-${h.id}`,
-    type: 'HACKATHON_POSTED',
-    title: h.title,
-    date: new Date(h.created_at),
-    meta: h.mode,
-    link: `/hackathons/${h.id}`
-  }));
+  const formatEventDate = (date: Date) => {
+    try {
+      if (isNaN(date.getTime())) return 'RECENT ACTIVITY';
+      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return 'RECENT ACTIVITY';
+    }
+  };
+
+  // Combine for timeline safely
+  const posterEvents = (Array.isArray(hackathons) ? hackathons : [])
+    .filter(h => h && h.created_at)
+    .map((h, index) => {
+      const d = new Date(h.created_at);
+      return {
+        id: h.id ? `hack-${h.id}` : `hack-idx-${index}`,
+        type: 'HACKATHON_POSTED',
+        title: h.title || 'Untitled Hackathon',
+        date: d,
+        isValidDate: !isNaN(d.getTime()),
+        meta: h.mode ? String(h.mode).toUpperCase() : 'ONLINE',
+        link: h.id ? `/hackathons/${h.id}` : '/hackathons'
+      };
+    })
+    .filter(e => e.isValidDate);
   
-  const providerEvents = applications.map(a => ({
-    id: `app-${a.id}`,
-    type: 'APPLICATION_SUBMITTED',
-    title: a.hackathons?.title || 'A Hackathon',
-    date: new Date(a.created_at),
-    meta: a.status.toUpperCase(),
-    link: `/hackathons/${a.hackathon_id}`
-  }));
+  const providerEvents = (Array.isArray(applications) ? applications : [])
+    .filter(a => a && a.created_at)
+    .map((a, index) => {
+      const d = new Date(a.created_at);
+      return {
+        id: a.id ? `app-${a.id}` : `app-idx-${index}`,
+        type: 'APPLICATION_SUBMITTED',
+        title: a.hackathons?.title || 'A Hackathon',
+        date: d,
+        isValidDate: !isNaN(d.getTime()),
+        meta: a.status ? String(a.status).toUpperCase() : 'PENDING',
+        link: a.hackathon_id ? `/hackathons/${a.hackathon_id}` : '/my-applications'
+      };
+    })
+    .filter(e => e.isValidDate);
 
   const timelineEvents = [...posterEvents, ...providerEvents]
     .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -174,10 +244,18 @@ export default function DashboardPage() {
             <span className="font-mono text-sm uppercase tracking-wider text-muted-foreground animate-pulse">Compiling Market Data...</span>
           </div>
         ) : error ? (
-          <div className="flex justify-center py-28">
-            <div className="font-mono text-xs uppercase tracking-wider text-accent border border-accent p-4">
+          <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
+            <div className="font-mono text-xs uppercase tracking-wider text-accent border border-accent p-4 max-w-md">
               {error}
             </div>
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="py-3 px-6 bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider hover:bg-accent hover:text-white transition-colors flex items-center gap-2 min-h-[46px]"
+            >
+              <RotateCcw className="w-4 h-4" />
+              RETRY CONNECTION
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
@@ -225,7 +303,7 @@ export default function DashboardPage() {
                       >
                         <div className={`absolute -left-[30px] top-1 w-3 h-3 rounded-full border-2 border-background ${event.type === 'APPLICATION_SUBMITTED' ? 'bg-accent' : 'bg-foreground'}`}></div>
                         <div className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-1.5 flex items-center gap-3">
-                          {event.date.toLocaleDateString()} at {event.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {formatEventDate(event.date)}
                           <span className={`px-2 py-[2px] border ${event.type === 'APPLICATION_SUBMITTED' ? 'border-accent/30 text-accent bg-accent/5' : 'border-border bg-card'}`}>
                             {event.type.replace('_', ' ')}
                           </span>

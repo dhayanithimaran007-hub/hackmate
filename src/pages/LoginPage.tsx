@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { authService } from '../services/authService';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,13 +10,32 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   
-  const from = location.state?.from?.pathname || '/dashboard';
+  // Safely resolve the return path, avoiding loops back to login/register
+  const rawFrom = location.state?.from;
+  const fromPath = typeof rawFrom === 'string'
+    ? rawFrom
+    : (rawFrom?.pathname ? (rawFrom.pathname + (rawFrom.search || '')) : '/dashboard');
+  const target = (fromPath && fromPath !== '/login' && fromPath !== '/register')
+    ? fromPath
+    : '/dashboard';
 
+  // If the initial auth check is running, show a centered spinner to avoid screen flash
+  if (authLoading) {
+    return (
+      <div className="flex flex-col min-h-screen w-full bg-background text-foreground items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
+          INITIALIZING SESSION...
+        </span>
+      </div>
+    );
+  }
+
+  // Declarative redirect if already authenticated
   if (user) {
-    navigate(from, { replace: true });
-    return null;
+    return <Navigate to={target} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,8 +44,8 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      await authService.login(email, password);
-      navigate(from, { replace: true });
+      await login(email, password);
+      navigate(target, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     } finally {

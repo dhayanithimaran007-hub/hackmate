@@ -3,33 +3,43 @@ import type { Profile } from '../types/database';
 
 export const profileService = {
   async getProfile(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Error fetching profile:', error.message || error);
+        return null;
+      }
       
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching profile:', error);
+      return data;
+    } catch (err) {
+      console.warn('Unexpected error in profileService.getProfile:', err);
       return null;
     }
-    
-    return data;
   },
 
   async getProfileByUsername(username: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .maybeSingle();
+        
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Error fetching profile by username:', error.message || error);
+        return null;
+      }
       
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching profile by username:', error);
+      return data;
+    } catch (err) {
+      console.warn('Unexpected error in getProfileByUsername:', err);
       return null;
     }
-    
-    return data;
   },
 
   async updateProfile(userId: string, updates: Partial<Profile>) {

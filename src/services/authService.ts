@@ -40,17 +40,24 @@ export const authService = {
   },
   
   async getProfile(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (error) {
+        if (error.code !== 'PGRST116') {
+          console.warn('Error fetching profile:', error.message || error);
+        }
+        return null;
+      }
       
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching profile:', error);
+      return data;
+    } catch (err) {
+      console.warn('Unexpected error in getProfile:', err);
       return null;
     }
-    
-    return data;
   }
 };

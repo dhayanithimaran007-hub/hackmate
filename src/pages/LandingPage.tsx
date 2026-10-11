@@ -517,6 +517,16 @@ export default function LandingPage() {
             <Link to="/login" className="hover:text-accent transition-colors duration-300">LOG IN</Link>
           </div>
         </div>
+
+        {/* Developer Credit */}
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-12 mt-10 pt-8 border-t border-border/40 flex flex-col items-center justify-center text-center">
+          <p className="font-sans text-[10px] sm:text-xs font-semibold tracking-[0.25em] text-muted-foreground uppercase mb-1.5 select-none">
+            DESIGNED AND DEVELOPED BY
+          </p>
+          <span className="dev-credit-name text-2xl sm:text-3xl md:text-4xl font-bold tracking-wider text-white select-none max-w-full break-words px-2">
+            DHAYANITHIMARAN K
+          </span>
+        </div>
       </footer>
 
     </div>

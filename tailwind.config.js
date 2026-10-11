@@ -42,6 +42,10 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      fontFamily: {
+        diploma: ['Diploma', 'serif'],
+        'roboto-condensed': ['"Roboto Condensed"', 'Inter', 'sans-serif'],
+      },
     },
   },
   plugins: [],

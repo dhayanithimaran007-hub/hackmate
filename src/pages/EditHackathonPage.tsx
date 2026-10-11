@@ -16,7 +16,13 @@ export default function EditHackathonPage() {
 
   useEffect(() => {
     const fetchHackathon = async () => {
-      if (!id || !user) return;
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      if (!user) {
+        return;
+      }
       try {
         const data = await hackathonService.getHackathon(id);
         if (!data || data.organizer_id !== user.id) {
@@ -36,13 +42,31 @@ export default function EditHackathonPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="font-mono text-xs tracking-widest uppercase animate-pulse">Loading...</div>
+      <div className="flex-1 flex items-center justify-center p-8 min-h-[300px]">
+        <div className="font-mono text-xs tracking-widest uppercase animate-pulse text-muted-foreground">
+          Loading Hackathon Data...
+        </div>
       </div>
     );
   }
 
-  if (!hackathon) return null;
+  if (!hackathon) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[400px]">
+        <h2 className="heading-section mb-3">HACKATHON NOT FOUND</h2>
+        <p className="font-mono text-xs text-muted-foreground uppercase mb-6">
+          The requested hackathon could not be found or you do not have permission to edit it.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/hackathons')}
+          className="px-6 py-3 bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider hover:bg-accent transition-colors min-h-[44px]"
+        >
+          RETURN TO MY HACKATHONS
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col py-12 md:py-24">

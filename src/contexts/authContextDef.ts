@@ -7,8 +7,11 @@ export interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -16,6 +19,9 @@ export const AuthContext = createContext<AuthContextType>({
   profile: null,
   session: null,
   loading: true,
+  error: null,
+  login: async () => {},
   logout: async () => {},
   refreshProfile: async () => {},
+  clearError: () => {},
 });

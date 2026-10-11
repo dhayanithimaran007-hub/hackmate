@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuth } from '../hooks/useAuth';
+import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -14,11 +15,21 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
+  if (authLoading) {
+    return (
+      <div className="flex flex-col min-h-screen w-full bg-background text-foreground items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
+          INITIALIZING SESSION...
+        </span>
+      </div>
+    );
+  }
+
   if (user) {
-    navigate('/dashboard', { replace: true });
-    return null;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
