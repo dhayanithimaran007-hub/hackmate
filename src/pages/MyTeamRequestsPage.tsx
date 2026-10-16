@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { hackathonService } from '../services/hackathonService';
 import { applicationService } from '../services/applicationService';
+import { profileService } from '../services/profileService';
 import { matchingService } from '../services/matchingService';
-import { Check, X, ShieldCheck, User, Phone, Mail, MessageSquare } from 'lucide-react';
+import { Check, X, ShieldCheck, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { formatExternalUrl, formatWhatsAppUrl, formatTelUrl } from '../utils/formatters';
+import { formatExternalUrl } from '../utils/formatters';
 
 export default function MyTeamRequestsPage() {
   const { user } = useAuth();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const targetHackathonId = searchParams.get('hackathonId') || location.state?.hackathonId || '';
   
   const [hackathons, setHackathons] = useState<any[]>([]);
   const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
   const [applications, setApplications] = useState<any[]>([]);
+  const [extraContacts, setExtraContacts] = useState<Record<string, { email?: string; phone?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState('');
 
@@ -23,9 +28,13 @@ export default function MyTeamRequestsPage() {
       if (!user) return;
       try {
         const hacks = await hackathonService.getMyHackathons(user.id);
-        setHackathons(hacks.filter((h: any) => h.status === 'OPEN'));
-        if (hacks.length > 0) {
-          setSelectedHackathonId(hacks[0].id);
+        const openHacks = hacks.filter((h: any) => h.status === 'OPEN');
+        setHackathons(openHacks);
+        if (openHacks.length > 0) {
+          const matchTarget = targetHackathonId && openHacks.some((h: any) => h.id === targetHackathonId)
+            ? targetHackathonId
+            : openHacks[0].id;
+          setSelectedHackathonId(matchTarget);
         }
       } catch (err) {
         console.error(err);
@@ -34,7 +43,7 @@ export default function MyTeamRequestsPage() {
       }
     };
     fetchHackathons();
-  }, [user]);
+  }, [user, targetHackathonId]);
 
   useEffect(() => {
     const fetchApps = async () => {
@@ -69,7 +78,12 @@ export default function MyTeamRequestsPage() {
     setActionError('');
     try {
       await applicationService.updateApplicationStatus(appId, status);
-      // Refresh
+      // Re-fetch hackathons so updated open_positions is reflected
+      if (user) {
+        const freshHacks = await hackathonService.getMyHackathons(user.id);
+        setHackathons(freshHacks.filter((h: any) => h.status === 'OPEN'));
+      }
+      // Refresh applications
       const apps = await applicationService.getApplicationsForHackathon(selectedHackathonId);
       const hackathon = hackathons.find((h: any) => h.id === selectedHackathonId);
       if (hackathon) {
@@ -83,6 +97,68 @@ export default function MyTeamRequestsPage() {
     } catch (err: any) {
       setActionError(err.message || 'Failed to update application. Please try again.');
     }
+  };
+
+  useEffect(() => {
+    const fetchExtraContacts = async () => {
+      const acceptedApps = applications.filter(
+        (app: any) => (app.status === 'accepted' || app.status === undefined) && app.applicant_id
+      );
+      if (acceptedApps.length === 0) return;
+
+      const newContacts: Record<string, { email?: string; phone?: string }> = {};
+      await Promise.all(
+        acceptedApps.map(async (app: any) => {
+          if (app.contact_email && app.contact_phone) return;
+          try {
+            const info = await profileService.getContactInfo(app.applicant_id);
+            if (info) {
+              newContacts[app.applicant_id] = info;
+            }
+          } catch {
+            // Silently handle if RPC is not available
+          }
+        })
+      );
+
+      if (Object.keys(newContacts).length > 0) {
+        setExtraContacts(prev => ({ ...prev, ...newContacts }));
+      }
+    };
+
+    fetchExtraContacts();
+  }, [applications]);
+
+  const getApplicantContacts = (app: any) => {
+    const extra = extraContacts[app.applicant_id];
+    const phone = app.contact_phone || app.phone || app.profiles?.phone || extra?.phone || null;
+
+    const hasExplicitWhatsappField =
+      'contact_whatsapp' in app ||
+      'whatsapp' in app ||
+      'whatsapp_number' in app ||
+      (app.profiles && ('whatsapp' in app.profiles || 'whatsapp_number' in app.profiles));
+
+    let whatsapp: string | null = null;
+    if (hasExplicitWhatsappField) {
+      whatsapp =
+        app.contact_whatsapp ||
+        app.whatsapp ||
+        app.whatsapp_number ||
+        app.profiles?.whatsapp ||
+        app.profiles?.whatsapp_number ||
+        null;
+    } else {
+      whatsapp = phone;
+    }
+
+    const email = app.contact_email || app.email || app.profiles?.email || extra?.email || null;
+
+    return {
+      phone: phone?.trim() || null,
+      whatsapp: whatsapp?.trim() || null,
+      email: email?.trim() || null
+    };
   };
 
   if (loading && hackathons.length === 0) return <div className="flex-1 flex items-center justify-center font-mono">Loading...</div>;
@@ -147,12 +223,22 @@ export default function MyTeamRequestsPage() {
                 >
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-muted flex items-center justify-center rounded-full overflow-hidden">
+                      <div className="w-12 h-12 bg-muted flex items-center justify-center rounded-full overflow-hidden border border-border">
                         {app.profiles?.avatar_url ? (
-                          <img src={app.profiles.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="text-muted-foreground" />
-                        )}
+                          <img 
+                            src={app.profiles.avatar_url} 
+                            alt="Avatar" 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.parentElement?.querySelector('.applicant-avatar-fallback');
+                              if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className={`applicant-avatar-fallback w-full h-full items-center justify-center font-mono text-xs uppercase font-bold bg-card ${app.profiles?.avatar_url ? 'hidden' : 'flex'}`}>
+                          {app.profiles?.full_name?.charAt(0) || <User className="text-muted-foreground w-4 h-4" />}
+                        </div>
                       </div>
                       <div>
                         {app.profiles?.username ? (
@@ -216,29 +302,48 @@ export default function MyTeamRequestsPage() {
                     </div>
                   )}
 
-                  {(app.contact_email || app.contact_phone) && (
-                    <div className="w-full mt-4 flex flex-col gap-2">
-                      <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1 border-t border-border pt-4">APPLICANT CONTACT DETAILS</span>
-                      {app.contact_phone && (
-                        <div className="flex gap-2">
-                          <a href={formatTelUrl(app.contact_phone)} className="flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[40px] bg-background border border-border hover:border-foreground transition-colors font-mono text-xs uppercase font-bold tracking-wider">
-                            <Phone size={14} /> CALL
-                          </a>
-                          <a href={formatWhatsAppUrl(app.contact_phone)} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[40px] bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white transition-colors font-mono text-xs uppercase font-bold tracking-wider">
-                            <MessageSquare size={14} /> WHATSAPP
-                          </a>
+                  {/* Accepted Applicant Contact Details */}
+                  {(app.status === 'accepted' || app.status === undefined) && (() => {
+                    const { phone, whatsapp, email } = getApplicantContacts(app);
+                    return (
+                      <div className="w-full mt-4 pt-4 border-t border-border flex flex-col gap-2.5">
+                        <span className="font-mono text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                          APPLICANT CONTACT DETAILS
+                        </span>
+                        <div className="flex flex-col gap-3 bg-background border border-border p-4">
+                          {/* PHONE NUMBER */}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                              PHONE NUMBER
+                            </span>
+                            <span className={`font-mono text-xs sm:text-sm select-all ${phone ? 'text-foreground font-medium' : 'text-muted-foreground/60 italic'}`}>
+                              {phone || 'Not provided'}
+                            </span>
+                          </div>
+
+                          {/* WHATSAPP NUMBER */}
+                          <div className="flex flex-col gap-1 border-t border-border/50 pt-2.5">
+                            <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                              WHATSAPP NUMBER
+                            </span>
+                            <span className={`font-mono text-xs sm:text-sm select-all ${whatsapp ? 'text-foreground font-medium' : 'text-muted-foreground/60 italic'}`}>
+                              {whatsapp || 'Not provided'}
+                            </span>
+                          </div>
+
+                          {/* EMAIL ADDRESS */}
+                          <div className="flex flex-col gap-1 border-t border-border/50 pt-2.5">
+                            <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                              EMAIL ADDRESS
+                            </span>
+                            <span className={`font-mono text-xs sm:text-sm break-all select-all ${email ? 'text-foreground font-medium' : 'text-muted-foreground/60 italic'}`}>
+                              {email || 'Not provided'}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      {app.contact_email && (
-                        <a href={`mailto:${app.contact_email}`} className="w-full flex items-center justify-center gap-2 py-2.5 min-h-[40px] bg-background border border-border hover:border-foreground transition-colors font-mono text-xs uppercase font-bold tracking-wider">
-                          <Mail size={14} /> EMAIL
-                        </a>
-                      )}
-                    </div>
-                  )}
-                  {(!app.contact_email && !app.contact_phone) && (
-                    <div className="font-mono text-xs text-muted-foreground border border-border p-3 mt-4 text-center">NO CONTACT DETAILS PROVIDED</div>
-                  )}
+                      </div>
+                    );
+                  })()}
                 </motion.div>
               ))}
             </div>

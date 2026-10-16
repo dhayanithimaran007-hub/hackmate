@@ -85,10 +85,9 @@ export const applicationService = {
       .select('*')
       .eq('hackathon_id', hackathonId)
       .eq('applicant_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
     return data;

@@ -50,13 +50,18 @@ export default function RegisterPage() {
     setLoading(true);
     
     try {
-      await authService.register(email, password, fullName);
-      setSuccess('Registration successful! Redirecting...');
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-      
+      const authData = await authService.register(email, password, fullName);
+      if (authData?.session) {
+        setSuccess('Account created and verified! Redirecting to dashboard...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        setSuccess('Registration successful! Please check your email to confirm your account if required, then log in. Redirecting...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to register');
     } finally {

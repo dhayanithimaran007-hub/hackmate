@@ -5,7 +5,7 @@ import { profileService } from '../services/profileService';
 import type { Profile, Project, HackathonExperience } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Code2, Briefcase, Plus, Trash2, Globe, Check, ExternalLink, X } from 'lucide-react';
+import { User, Code2, Briefcase, Plus, Trash2, Globe, Check, ExternalLink, X, Mail, Phone, ShieldCheck } from 'lucide-react';
 import { formatExternalUrl, sanitizeUsername } from '../utils/formatters';
 
 const ROLES = [
@@ -38,6 +38,8 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState<Partial<Profile>>({});
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [isEmailPublic, setIsEmailPublic] = useState(true);
+  const [isPhonePublic, setIsPhonePublic] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [experiences, setExperiences] = useState<HackathonExperience[]>([]);
   
@@ -67,12 +69,20 @@ export default function ProfilePage() {
           profileService.getHackathonExperience(user.id)
         ]);
         
-        if (profData) setProfileData(profData);
+        if (profData) {
+          setProfileData(profData);
+          setContactEmail(profData.email || user.user_metadata?.contact_email || user.email || '');
+          setContactPhone(profData.phone || user.user_metadata?.contact_phone || '');
+          setIsEmailPublic(profData.is_email_public ?? (user.user_metadata?.is_email_public ?? true));
+          setIsPhonePublic(profData.is_phone_public ?? (user.user_metadata?.is_phone_public ?? true));
+        } else {
+          setContactEmail(user.user_metadata?.contact_email || user.email || '');
+          setContactPhone(user.user_metadata?.contact_phone || '');
+          setIsEmailPublic(user.user_metadata?.is_email_public ?? true);
+          setIsPhonePublic(user.user_metadata?.is_phone_public ?? true);
+        }
         if (projData) setProjects(projData);
         if (expData) setExperiences(expData);
-
-        setContactEmail(user.user_metadata?.contact_email || user.email || '');
-        setContactPhone(user.user_metadata?.contact_phone || '');
       } catch (err) {
         console.error(err);
       }
@@ -109,14 +119,21 @@ export default function ProfilePage() {
         throw new Error('Username can only contain letters, numbers, underscores, and dashes');
       }
       if (cleanUsername && cleanUsername !== authProfile?.username) {
-        const { data } = await supabase.from('profiles').select('id').eq('username', cleanUsername).single();
+        const { data } = await supabase.from('profiles').select('id').eq('username', cleanUsername).maybeSingle();
         if (data && data.id !== user.id) {
           throw new Error('Username is already taken');
         }
       }
 
+      const cleanEmail = contactEmail.trim();
+      const cleanPhone = contactPhone.trim();
+
       const updatedPayload: Partial<Profile> = {
         ...profileData,
+        email: isEmailPublic ? (cleanEmail || null) : null,
+        phone: isPhonePublic ? (cleanPhone || null) : null,
+        is_email_public: isEmailPublic,
+        is_phone_public: isPhonePublic,
         username: cleanUsername,
         github_url: formatExternalUrl(profileData.github_url) || null,
         linkedin_url: formatExternalUrl(profileData.linkedin_url) || null,
@@ -125,7 +142,7 @@ export default function ProfilePage() {
       };
 
       await profileService.updateProfile(user.id, updatedPayload);
-      await profileService.updateContactInfo(contactPhone, contactEmail);
+      await profileService.updateContactInfo(cleanPhone, cleanEmail, isPhonePublic, isEmailPublic);
       await refreshProfile();
       // Force refresh the session to get updated user_metadata
       await supabase.auth.refreshSession();
@@ -146,16 +163,30 @@ export default function ProfilePage() {
           className="w-20 h-20 md:w-24 md:h-24 border-2 border-foreground bg-card flex items-center justify-center shrink-0 select-none shadow-sm relative overflow-hidden"
           title={profileData.full_name || 'User Avatar'}
         >
-          {getInitials(profileData.full_name) ? (
-            <span className="font-display text-3xl md:text-4xl text-foreground tracking-wider">
-              {getInitials(profileData.full_name)}
-            </span>
-          ) : (
-            <User className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground" />
-          )}
+          {profileData.avatar_url ? (
+            <img 
+              src={profileData.avatar_url} 
+              alt="Avatar" 
+              className="w-full h-full object-cover" 
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const fallback = e.currentTarget.parentElement?.querySelector('.profile-avatar-fallback');
+                if (fallback) (fallback as HTMLElement).style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div className={`profile-avatar-fallback w-full h-full items-center justify-center ${profileData.avatar_url ? 'hidden' : 'flex'}`}>
+            {getInitials(profileData.full_name) ? (
+              <span className="font-display text-3xl md:text-4xl text-foreground tracking-wider">
+                {getInitials(profileData.full_name)}
+              </span>
+            ) : (
+              <User className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground" />
+            )}
+          </div>
         </div>
         <div className="flex-1 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Full Name *</label>
               <input type="text" value={profileData.full_name || ''} onChange={e => handleChange('full_name', e.target.value)} className="w-full px-3.5 py-2.5 min-h-[44px] bg-background border border-border focus:border-accent outline-none font-sans text-sm" />
@@ -164,6 +195,10 @@ export default function ProfilePage() {
               <label className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Username *</label>
               <input type="text" value={profileData.username || ''} onChange={e => handleChange('username', e.target.value)} placeholder="e.g. hackercat" className="w-full px-3.5 py-2.5 min-h-[44px] bg-background border border-border focus:border-accent outline-none font-mono text-sm lowercase" />
             </div>
+          </div>
+          <div>
+            <label className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Avatar Image URL (Optional)</label>
+            <input type="url" value={profileData.avatar_url || ''} onChange={e => handleChange('avatar_url', e.target.value)} placeholder="https://example.com/avatar.jpg" className="w-full px-3.5 py-2.5 min-h-[44px] bg-background border border-border focus:border-accent outline-none font-sans text-sm" />
           </div>
         </div>
       </div>
@@ -179,14 +214,98 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
-        <div>
-          <label className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Contact Email (Private)</label>
-          <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="Email for team leads to contact you" className="w-full px-3.5 py-2.5 min-h-[44px] bg-background border border-border focus:border-accent outline-none font-sans text-sm" />
+      {/* Contact Details & Public Visibility Settings */}
+      <div className="pt-6 border-t border-border space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border/60">
+          <div>
+            <h3 className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              <ShieldCheck size={16} className="text-accent" /> CONTACT INFO & VISIBILITY SETTINGS
+            </h3>
+            <p className="font-mono text-[11px] text-muted-foreground uppercase mt-0.5">
+              Choose which contact methods are publicly displayed on your developer profile
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono uppercase bg-accent/10 border border-accent/20 text-accent self-start sm:self-auto">
+            <span>PRIVACY GUARD ACTIVE</span>
+          </div>
         </div>
-        <div>
-          <label className="text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">Phone Number (Private)</label>
-          <input type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="e.g. +1234567890" className="w-full px-3.5 py-2.5 min-h-[44px] bg-background border border-border focus:border-accent outline-none font-sans text-sm" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Email Card */}
+          <div className="p-4 bg-background border border-border flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label className="text-xs font-mono font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <Mail size={14} className="text-accent" /> Email Address
+                </label>
+                <span className={`text-[10px] font-mono px-2 py-0.5 border uppercase font-bold ${
+                  isEmailPublic 
+                    ? 'border-accent text-accent bg-accent/10' 
+                    : 'border-muted-foreground/40 text-muted-foreground bg-muted/30'
+                }`}>
+                  {isEmailPublic ? 'PUBLIC ON PROFILE' : 'PRIVATE / HIDDEN'}
+                </span>
+              </div>
+              <input 
+                type="email" 
+                value={contactEmail} 
+                onChange={e => setContactEmail(e.target.value)} 
+                placeholder="dev@hackmate.io" 
+                className="w-full px-3.5 py-2.5 min-h-[44px] bg-card border border-border focus:border-accent outline-none font-sans text-sm" 
+              />
+            </div>
+            
+            <label className="flex items-start gap-2.5 cursor-pointer pt-2 border-t border-border/40 select-none">
+              <input 
+                type="checkbox" 
+                checked={isEmailPublic} 
+                onChange={e => setIsEmailPublic(e.target.checked)} 
+                className="mt-1 h-4 w-4 rounded-none accent-accent cursor-pointer" 
+              />
+              <div className="flex-1 text-[11px] font-mono leading-tight">
+                <span className="text-foreground uppercase font-semibold block">Share email publicly</span>
+                <span className="text-muted-foreground">Visitors can contact you directly via clickable mailto: link</span>
+              </div>
+            </label>
+          </div>
+
+          {/* Phone Card */}
+          <div className="p-4 bg-background border border-border flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label className="text-xs font-mono font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <Phone size={14} className="text-accent" /> Phone Number
+                </label>
+                <span className={`text-[10px] font-mono px-2 py-0.5 border uppercase font-bold ${
+                  isPhonePublic 
+                    ? 'border-accent text-accent bg-accent/10' 
+                    : 'border-muted-foreground/40 text-muted-foreground bg-muted/30'
+                }`}>
+                  {isPhonePublic ? 'PUBLIC ON PROFILE' : 'PRIVATE / HIDDEN'}
+                </span>
+              </div>
+              <input 
+                type="tel" 
+                value={contactPhone} 
+                onChange={e => setContactPhone(e.target.value)} 
+                placeholder="+1 (555) 019-2834" 
+                className="w-full px-3.5 py-2.5 min-h-[44px] bg-card border border-border focus:border-accent outline-none font-sans text-sm" 
+              />
+            </div>
+
+            <label className="flex items-start gap-2.5 cursor-pointer pt-2 border-t border-border/40 select-none">
+              <input 
+                type="checkbox" 
+                checked={isPhonePublic} 
+                onChange={e => setIsPhonePublic(e.target.checked)} 
+                className="mt-1 h-4 w-4 rounded-none accent-accent cursor-pointer" 
+              />
+              <div className="flex-1 text-[11px] font-mono leading-tight">
+                <span className="text-foreground uppercase font-semibold block">Share phone publicly</span>
+                <span className="text-muted-foreground">Visitors can call or message you directly via clickable tel: link</span>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
 

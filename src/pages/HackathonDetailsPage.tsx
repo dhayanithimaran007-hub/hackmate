@@ -6,7 +6,7 @@ import { applicationService } from '../services/applicationService';
 import { ArrowLeft, MapPin, ExternalLink, ShieldCheck, Terminal, ShieldAlert, Phone, Mail, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { profileService } from '../services/profileService';
-import { formatExternalUrl, formatWhatsAppUrl, formatTelUrl } from '../utils/formatters';
+import { formatExternalUrl, formatWhatsAppUrl, formatTelUrl, formatDisplayDate } from '../utils/formatters';
 
 export default function HackathonDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +91,11 @@ export default function HackathonDetailsPage() {
       setShowApplyForm(false);
     } catch (err: any) {
       console.error(err);
-      setApplyError(err.message || 'Unable to submit application. Please try again.');
+      if (err.code === '23505' || err.message?.includes('unique constraint') || err.message?.includes('duplicate key')) {
+        setApplyError('You have already submitted an application for this hackathon.');
+      } else {
+        setApplyError(err.message || 'Unable to submit application. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -127,12 +131,20 @@ export default function HackathonDetailsPage() {
             {hackathon.profiles && (
               <div className="flex items-center gap-3.5 mb-8">
                 {hackathon.profiles.avatar_url ? (
-                  <img src={hackathon.profiles.avatar_url} alt="Organizer" className="w-10 h-10 object-cover border border-border" />
-                ) : (
-                  <div className="w-10 h-10 border border-border flex items-center justify-center font-mono text-sm bg-card">
-                    {hackathon.profiles.full_name?.charAt(0)}
-                  </div>
-                )}
+                  <img 
+                    src={hackathon.profiles.avatar_url} 
+                    alt="Organizer" 
+                    className="w-10 h-10 object-cover border border-border" 
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.parentElement?.querySelector('.organizer-avatar-fallback');
+                      if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={`organizer-avatar-fallback w-10 h-10 border border-border items-center justify-center font-mono text-sm bg-card ${hackathon.profiles.avatar_url ? 'hidden' : 'flex'}`}>
+                  {hackathon.profiles.full_name?.charAt(0) || '?'}
+                </div>
                 <div>
                   <div className="font-mono text-xs uppercase font-bold text-foreground">
                     {hackathon.profiles.username ? (
@@ -155,11 +167,11 @@ export default function HackathonDetailsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10 border-y border-border py-6">
               <div className="flex flex-col gap-1.5">
                 <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">EVENT DATE</span>
-                <span className="font-mono text-sm font-bold">{new Date(hackathon.event_date).toLocaleDateString()}</span>
+                <span className="font-mono text-sm font-bold">{formatDisplayDate(hackathon.event_date)}</span>
               </div>
               <div className="flex flex-col gap-1.5">
                 <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">REGISTRATION CLOSE</span>
-                <span className="font-mono text-sm font-bold">{new Date(hackathon.registration_deadline).toLocaleDateString()}</span>
+                <span className="font-mono text-sm font-bold">{formatDisplayDate(hackathon.registration_deadline)}</span>
               </div>
               <div className="flex flex-col gap-1.5">
                 <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">OPEN POSITIONS</span>
@@ -276,7 +288,7 @@ export default function HackathonDetailsPage() {
                   <Link to={`/hackathons/${id}/edit`} className="w-full py-3.5 text-center border border-border hover:bg-background transition-colors font-mono text-xs sm:text-sm font-bold uppercase tracking-wider min-h-[48px] flex items-center justify-center">
                     EDIT REQUIREMENTS
                   </Link>
-                  <Link to="/team-requests" className="w-full py-3.5 bg-foreground text-background text-center hover:bg-accent hover:text-white transition-colors font-mono text-xs sm:text-sm font-bold uppercase tracking-wider min-h-[48px] flex items-center justify-center">
+                  <Link to={`/team-requests?hackathonId=${id}`} state={{ hackathonId: id }} className="w-full py-3.5 bg-foreground text-background text-center hover:bg-accent hover:text-white transition-colors font-mono text-xs sm:text-sm font-bold uppercase tracking-wider min-h-[48px] flex items-center justify-center">
                     VIEW APPLICATIONS
                   </Link>
                 </div>
@@ -288,29 +300,37 @@ export default function HackathonDetailsPage() {
                       <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-accent">APPLICATION ACCEPTED</span>
                       <span className="font-mono text-xs text-muted-foreground">Your application has been accepted. Welcome to the team!</span>
                       
-                      {organizerContact && (organizerContact.phone || organizerContact.email) && (
-                        <div className="w-full mt-3 flex flex-col gap-2">
-                          <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">TEAM LEAD CONTACT</span>
-                          {organizerContact.phone && (
-                            <div className="flex gap-2">
-                              <a href={formatTelUrl(organizerContact.phone)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-background border border-border hover:border-foreground transition-colors font-mono text-xs uppercase font-bold">
-                                <Phone size={14} /> CALL
+                      {(() => {
+                        const effectiveEmail = organizerContact?.email || hackathon.contact_email;
+                        const effectivePhone = organizerContact?.phone || hackathon.contact_phone;
+                        if (!effectiveEmail && !effectivePhone) {
+                          return (
+                            <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider mt-2 border border-border p-2">
+                              NO CONTACT DETAILS PROVIDED BY ORGANIZER
+                            </span>
+                          );
+                        }
+                        return (
+                          <div className="w-full mt-3 flex flex-col gap-2">
+                            <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">TEAM LEAD CONTACT</span>
+                            {effectivePhone && (
+                              <div className="flex gap-2">
+                                <a href={formatTelUrl(effectivePhone)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-background border border-border hover:border-foreground transition-colors font-mono text-xs uppercase font-bold">
+                                  <Phone size={14} /> CALL
+                                </a>
+                                <a href={formatWhatsAppUrl(effectivePhone)} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white transition-colors font-mono text-xs uppercase font-bold">
+                                  <MessageSquare size={14} /> WHATSAPP
+                                </a>
+                              </div>
+                            )}
+                            {effectiveEmail && (
+                              <a href={`mailto:${effectiveEmail}`} className="w-full flex items-center justify-center gap-2 py-2.5 bg-background border border-border hover:border-foreground transition-colors font-mono text-xs uppercase font-bold">
+                                <Mail size={14} /> EMAIL
                               </a>
-                              <a href={formatWhatsAppUrl(organizerContact.phone)} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white transition-colors font-mono text-xs uppercase font-bold">
-                                <MessageSquare size={14} /> WHATSAPP
-                              </a>
-                            </div>
-                          )}
-                          {organizerContact.email && (
-                            <a href={`mailto:${organizerContact.email}`} className="w-full flex items-center justify-center gap-2 py-2.5 bg-background border border-border hover:border-foreground transition-colors font-mono text-xs uppercase font-bold">
-                              <Mail size={14} /> EMAIL
-                            </a>
-                          )}
-                        </div>
-                      )}
-                      {(!organizerContact || (!organizerContact.phone && !organizerContact.email)) && (
-                         <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider mt-2 border border-border p-2">NO CONTACT DETAILS PROVIDED BY ORGANIZER</span>
-                      )}
+                            )}
+                          </div>
+                        );
+                      })()}
                     </>
                   ) : application.status === 'rejected' ? (
                     <>

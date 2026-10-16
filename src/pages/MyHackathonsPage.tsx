@@ -6,6 +6,7 @@ import { hackathonService } from '../services/hackathonService';
 import type { Hackathon } from '../types/database';
 import { Settings, Users, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDisplayDate } from '../utils/formatters';
 
 export default function MyHackathonsPage() {
   const { user } = useAuth();
@@ -119,7 +120,7 @@ export default function MyHackathonsPage() {
                       {h.status}
                     </span>
                     <span className="font-mono text-xs tracking-wider uppercase text-muted-foreground">
-                      {new Date(h.created_at).toLocaleDateString()}
+                      {formatDisplayDate(h.created_at)}
                     </span>
                   </div>
                   
@@ -136,7 +137,7 @@ export default function MyHackathonsPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>DEADLINE:</span>
-                      <span className="text-foreground font-bold">{new Date(h.registration_deadline).toLocaleDateString()}</span>
+                      <span className="text-foreground font-bold">{formatDisplayDate(h.registration_deadline)}</span>
                     </div>
                   </div>
 

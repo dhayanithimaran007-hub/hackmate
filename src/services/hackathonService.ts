@@ -35,10 +35,9 @@ export const hackathonService = {
       .from('hackathons')
       .select('*, profiles:organizer_id(full_name, college, avatar_url, username)')
       .eq('id', id)
-      .single();
+      .maybeSingle();
       
-    if (error) {
-      if (error.code === 'PGRST116') return null;
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
     return data;
@@ -74,6 +73,18 @@ export const hackathonService = {
   },
 
   async deleteHackathon(id: string, userId: string) {
+    // Clean up related members and applications first to avoid foreign key blocks
+    try {
+      await supabase.from('hackathon_members').delete().eq('hackathon_id', id);
+    } catch {
+      // Ignore if none or if handled by DB cascade
+    }
+    try {
+      await supabase.from('applications').delete().eq('hackathon_id', id);
+    } catch {
+      // Ignore if none or if handled by DB cascade
+    }
+
     const { error } = await supabase
       .from('hackathons')
       .delete()

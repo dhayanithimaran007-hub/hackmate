@@ -18,6 +18,10 @@ export interface Profile {
   leetcode_url?: string | null;
   availability_status?: string | null;
   available_for_hackathons?: boolean;
+  email?: string | null;
+  phone?: string | null;
+  is_email_public?: boolean | null;
+  is_phone_public?: boolean | null;
   created_at: string;
   updated_at: string;
 }

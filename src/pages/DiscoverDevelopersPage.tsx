@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { profileService } from '../services/profileService';
 import type { Profile } from '../types/database';
-import { Search } from 'lucide-react';
+import { Search, Mail, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { sanitizeUsername } from '../utils/formatters';
 
 export default function DiscoverDevelopersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -14,8 +15,8 @@ export default function DiscoverDevelopersPage() {
     const fetchProfiles = async () => {
       try {
         const data = await profileService.getAllProfiles();
-        // Only show profiles that have set a username (completed initial setup)
-        setProfiles((data || []).filter(p => p.username));
+        // Show all discoverable developers
+        setProfiles((data || []).filter(p => (p.full_name || p.username) && p.available_for_hackathons !== false));
       } catch (err) {
         console.error('Failed to load profiles', err);
       } finally {
@@ -26,15 +27,18 @@ export default function DiscoverDevelopersPage() {
   }, []);
 
   const filteredProfiles = profiles.filter(p => {
-    const term = search.toLowerCase();
-    return (
+    if (!search.trim()) return true;
+    const term = search.toLowerCase().trim();
+    return Boolean(
       (p.full_name?.toLowerCase().includes(term)) ||
       (p.username?.toLowerCase().includes(term)) ||
-      (p.skills?.some(s => s.toLowerCase().includes(term))) ||
-      (p.preferred_roles?.some(r => r.toLowerCase().includes(term))) ||
       (p.headline?.toLowerCase().includes(term)) ||
       (p.bio?.toLowerCase().includes(term)) ||
-      (p.college?.toLowerCase().includes(term))
+      (p.college?.toLowerCase().includes(term)) ||
+      (p.skills?.some(s => s.toLowerCase().includes(term))) ||
+      (p.preferred_roles?.some(r => r.toLowerCase().includes(term))) ||
+      (p.is_email_public !== false && p.email?.toLowerCase().includes(term)) ||
+      (p.is_phone_public !== false && p.phone?.toLowerCase().includes(term))
     );
   });
 
@@ -85,7 +89,7 @@ export default function DiscoverDevelopersPage() {
                 transition={{ delay: i * 0.05 }}
               >
                 <Link 
-                  to={`/profile/${profile.username}`}
+                  to={`/profile/${profile.username || profile.id}`}
                   className="block h-full border border-border bg-card p-6 hover:border-accent transition-all group relative overflow-hidden flex flex-col"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl -z-10 group-hover:bg-accent/10 transition-colors" />
@@ -93,19 +97,35 @@ export default function DiscoverDevelopersPage() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-14 h-14 rounded-none border border-border overflow-hidden bg-background flex items-center justify-center flex-shrink-0">
                       {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="font-display text-xl text-muted-foreground">
-                          {profile.full_name?.charAt(0) || '?'}
-                        </span>
-                      )}
+                        <img 
+                          src={profile.avatar_url} 
+                          alt={profile.full_name} 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.parentElement?.querySelector('.dev-avatar-fallback');
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <span className={`dev-avatar-fallback font-display text-xl text-muted-foreground ${profile.avatar_url ? 'hidden' : 'flex'}`}>
+                        {profile.full_name?.charAt(0) || '?'}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="heading-card truncate group-hover:text-accent transition-colors">
-                        {profile.full_name}
-                      </h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="heading-card truncate group-hover:text-accent transition-colors">
+                          {profile.full_name}
+                        </h3>
+                        {((profile.is_email_public !== false && profile.email) || (profile.is_phone_public !== false && profile.phone)) && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground group-hover:text-accent transition-colors shrink-0" title="Public contact channels available">
+                            {profile.is_email_public !== false && profile.email && <Mail size={12} />}
+                            {profile.is_phone_public !== false && profile.phone && <Phone size={12} />}
+                          </div>
+                        )}
+                      </div>
                       <p className="font-mono text-xs text-muted-foreground truncate">
-                        @{profile.username}
+                        @{profile.username || sanitizeUsername(profile.full_name) || profile.id.slice(0, 8)}
                       </p>
                     </div>
                   </div>

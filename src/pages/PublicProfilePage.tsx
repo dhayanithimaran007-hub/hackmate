@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import type { Profile, Project, HackathonExperience } from '../types/database';
-import { Globe, MapPin, GraduationCap, Building, Code2, Briefcase, ExternalLink } from 'lucide-react';
+import { 
+  Globe, MapPin, GraduationCap, Building, Code2, Briefcase, 
+  ExternalLink, Mail, Phone, Copy, Check, Lock, ShieldCheck 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
-import { formatExternalUrl } from '../utils/formatters';
+import { formatExternalUrl, sanitizeUsername } from '../utils/formatters';
+
 const getInitials = (name?: string | null) => {
   if (!name || !name.trim()) return '';
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -16,10 +21,25 @@ const getInitials = (name?: string | null) => {
 
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [experiences, setExperiences] = useState<HackathonExperience[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+
+  const handleCopyEmail = (email: string) => {
+    navigator.clipboard.writeText(email);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2000);
+  };
+
+  const handleCopyPhone = (phone: string) => {
+    navigator.clipboard.writeText(phone);
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 2000);
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -60,6 +80,18 @@ export default function PublicProfilePage() {
     );
   }
 
+  const isOwner = Boolean(user && profile && user.id === profile.id);
+
+  // Email computation honoring privacy preferences
+  const rawEmail = profile.email || (isOwner ? (user?.user_metadata?.contact_email || user?.email) : null);
+  const isEmailPublic = profile.is_email_public ?? (isOwner ? (user?.user_metadata?.is_email_public ?? true) : true);
+  const publicEmail = isEmailPublic ? rawEmail : (isOwner ? rawEmail : null);
+
+  // Phone computation honoring privacy preferences
+  const rawPhone = profile.phone || (isOwner ? user?.user_metadata?.contact_phone : null);
+  const isPhonePublic = profile.is_phone_public ?? (isOwner ? (user?.user_metadata?.is_phone_public ?? true) : true);
+  const publicPhone = isPhonePublic ? rawPhone : (isOwner ? rawPhone : null);
+
   return (
     <div className="flex-1 w-full max-w-screen-xl mx-auto px-4 md:px-8 py-10 md:py-20">
       {/* Header Section */}
@@ -94,10 +126,30 @@ export default function PublicProfilePage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="heading-page uppercase leading-none">{profile.full_name}</h1>
-              <p className="font-mono text-accent text-base sm:text-lg mt-1.5 font-bold">@{profile.username}</p>
+              <p className="font-mono text-accent text-base sm:text-lg mt-1.5 font-bold">
+                @{profile.username || sanitizeUsername(profile.full_name) || 'developer'}
+              </p>
             </div>
             
             <div className="flex flex-wrap gap-2">
+              {publicEmail && (
+                <a 
+                  href={`mailto:${publicEmail}`} 
+                  title={`Email ${profile.full_name}: ${publicEmail}`} 
+                  className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center text-foreground"
+                >
+                  <Mail size={18} />
+                </a>
+              )}
+              {publicPhone && (
+                <a 
+                  href={`tel:${publicPhone}`} 
+                  title={`Call ${profile.full_name}: ${publicPhone}`} 
+                  className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center text-foreground"
+                >
+                  <Phone size={18} />
+                </a>
+              )}
               {profile.github_url && (
                 <a href={formatExternalUrl(profile.github_url)} target="_blank" rel="noopener noreferrer" className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center">
                   <ExternalLink size={18} />
@@ -160,6 +212,125 @@ export default function PublicProfilePage() {
               </p>
             </section>
           )}
+
+          {/* Contact Section: Email & Phone */}
+          <section className="border border-border bg-card p-5 relative overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+              <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center gap-2 text-foreground">
+                <Mail size={16} className="text-accent" /> CONTACT
+              </h3>
+              {isOwner ? (
+                <Link 
+                  to="/profile" 
+                  className="text-[10px] font-mono text-accent hover:underline uppercase font-bold"
+                >
+                  [ EDIT ]
+                </Link>
+              ) : (
+                <span className="text-[10px] font-mono text-muted-foreground uppercase flex items-center gap-1">
+                  <ShieldCheck size={12} className="text-accent" /> DIRECT REACH
+                </span>
+              )}
+            </div>
+
+            {(!publicEmail && !publicPhone) ? (
+              <div className="py-4 text-center font-mono text-xs text-muted-foreground uppercase">
+                {isOwner ? (
+                  <div className="space-y-2">
+                    <p>NO CONTACT DETAILS SHARED YET.</p>
+                    <Link 
+                      to="/profile" 
+                      className="inline-block px-3 py-1.5 bg-foreground text-background font-mono text-xs font-bold uppercase hover:bg-accent transition-colors"
+                    >
+                      ADD CONTACT DETAILS
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <Lock size={13} /> NO PUBLIC CONTACT INFORMATION SHARED.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                {/* Email Section */}
+                {publicEmail && (
+                  <div className="p-3.5 bg-background border border-border group hover:border-accent transition-colors relative">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="font-mono text-[10px] text-muted-foreground uppercase flex items-center gap-1.5 font-bold tracking-wider">
+                        <Mail size={12} className="text-accent" /> EMAIL
+                      </span>
+                      {isOwner && (
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 border uppercase font-bold ${
+                          isEmailPublic 
+                            ? 'border-accent text-accent bg-accent/10' 
+                            : 'border-muted-foreground/40 text-muted-foreground bg-muted/20'
+                        }`}>
+                          {isEmailPublic ? 'PUBLIC' : 'PRIVATE (YOU)'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <a 
+                        href={`mailto:${publicEmail}`}
+                        className="font-mono text-xs sm:text-sm text-foreground hover:text-accent font-semibold break-all transition-colors flex items-center gap-1.5 group-hover:underline"
+                        title={`Send email to ${publicEmail}`}
+                      >
+                        <span>{publicEmail}</span>
+                        <ExternalLink size={12} className="shrink-0 text-muted-foreground group-hover:text-accent transition-colors" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyEmail(publicEmail)}
+                        className="p-1.5 border border-border hover:border-accent hover:text-accent transition-colors text-muted-foreground shrink-0 bg-card cursor-pointer"
+                        title="Copy email address"
+                      >
+                        {copiedEmail ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phone Section */}
+                {publicPhone && (
+                  <div className="p-3.5 bg-background border border-border group hover:border-accent transition-colors relative">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="font-mono text-[10px] text-muted-foreground uppercase flex items-center gap-1.5 font-bold tracking-wider">
+                        <Phone size={12} className="text-accent" /> PHONE
+                      </span>
+                      {isOwner && (
+                        <span className={`text-[9px] font-mono px-1.5 py-0.5 border uppercase font-bold ${
+                          isPhonePublic 
+                            ? 'border-accent text-accent bg-accent/10' 
+                            : 'border-muted-foreground/40 text-muted-foreground bg-muted/20'
+                        }`}>
+                          {isPhonePublic ? 'PUBLIC' : 'PRIVATE (YOU)'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <a 
+                        href={`tel:${publicPhone}`}
+                        className="font-mono text-xs sm:text-sm text-foreground hover:text-accent font-semibold break-all transition-colors flex items-center gap-1.5 group-hover:underline"
+                        title={`Call ${publicPhone}`}
+                      >
+                        <span>{publicPhone}</span>
+                        <ExternalLink size={12} className="shrink-0 text-muted-foreground group-hover:text-accent transition-colors" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyPhone(publicPhone)}
+                        className="p-1.5 border border-border hover:border-accent hover:text-accent transition-colors text-muted-foreground shrink-0 bg-card cursor-pointer"
+                        title="Copy phone number"
+                      >
+                        {copiedPhone ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
 
           {profile.skills && profile.skills.length > 0 && (
             <section>

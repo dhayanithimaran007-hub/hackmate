@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { hackathonService } from '../services/hackathonService';
 import { ArrowRight, Search, Filter, Users, Calendar, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDisplayDate } from '../utils/formatters';
 
 export default function DiscoverHackathonsPage() {
   const [hackathons, setHackathons] = useState<any[]>([]);
@@ -166,7 +167,7 @@ export default function DiscoverHackathonsPage() {
                 <div className="flex flex-col gap-2.5 font-mono text-xs tracking-wider text-muted-foreground uppercase border-t border-border pt-5">
                   <div className="flex items-center gap-2.5">
                     <Calendar size={14} className="text-foreground shrink-0" />
-                    <span>EVENT: {new Date(h.event_date).toLocaleDateString()}</span>
+                    <span>EVENT: {formatDisplayDate(h.event_date)}</span>
                   </div>
                   
                   {h.mode === 'Online' ? (

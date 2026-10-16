@@ -4,7 +4,7 @@ import { hackathonService } from '../../services/hackathonService';
 import { useAuth } from '../../hooks/useAuth';
 import type { Hackathon } from '../../types/database';
 import { profileService } from '../../services/profileService';
-import { formatExternalUrl } from '../../utils/formatters';
+import { formatExternalUrl, formatDateForInput } from '../../utils/formatters';
 import { Mail, Phone } from 'lucide-react';
 
 const MODES = ['Online', 'Offline', 'Hybrid'];
@@ -36,8 +36,8 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
   const [city, setCity] = useState(initialData?.city || '');
   const [venue, setVenue] = useState(initialData?.venue || '');
   const [experienceLevel, setExperienceLevel] = useState(initialData?.experience_level || '');
-  const [eventDate, setEventDate] = useState(initialData?.event_date ? new Date(initialData.event_date).toISOString().split('T')[0] : '');
-  const [registrationDeadline, setRegistrationDeadline] = useState(initialData?.registration_deadline ? new Date(initialData.registration_deadline).toISOString().split('T')[0] : '');
+  const [eventDate, setEventDate] = useState(initialData?.event_date ? formatDateForInput(initialData.event_date) : '');
+  const [registrationDeadline, setRegistrationDeadline] = useState(initialData?.registration_deadline ? formatDateForInput(initialData.registration_deadline) : '');
   
   const [skillsStr, setSkillsStr] = useState(initialData?.skills?.join(', ') || '');
   const [rolesStr, setRolesStr] = useState(initialData?.required_roles?.join(', ') || '');
@@ -63,14 +63,11 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
     if (isNaN(numOpenPositions) || numOpenPositions < 0 || numOpenPositions > numMaxTeamSize) return setError('Please enter valid open positions (cannot exceed max team size)');
 
     if (!eventDate) return setError('Please select an event date');
-    const eventDateObj = new Date(eventDate);
-    if (isNaN(eventDateObj.getTime())) return setError('Please enter a valid event date');
-    if (eventDateObj < new Date(new Date().setHours(0, 0, 0, 0))) return setError('Event date cannot be in the past');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (eventDate < todayStr) return setError('Event date cannot be in the past');
 
     if (!registrationDeadline) return setError('Please select a registration deadline');
-    const regDeadlineObj = new Date(registrationDeadline);
-    if (isNaN(regDeadlineObj.getTime())) return setError('Please enter a valid registration deadline');
-    if (regDeadlineObj > eventDateObj) return setError('Registration deadline must be before or on the event date');
+    if (registrationDeadline > eventDate) return setError('Registration deadline must be before or on the event date');
 
     setLoading(true);
     
@@ -91,7 +88,7 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
         description,
         max_team_size: numMaxTeamSize,
         open_positions: numOpenPositions,
-        team_size: numMaxTeamSize - numOpenPositions,
+        team_size: Math.max(1, numMaxTeamSize - numOpenPositions),
         hackathon_url: formatExternalUrl(hackathonUrl) || null,
         state: mode !== 'Online' ? state : null,
         district: mode !== 'Online' ? district : null,
@@ -99,8 +96,8 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
         city: mode !== 'Online' ? city : null,
         venue: mode !== 'Online' ? venue : null,
         experience_level: experienceLevel,
-        event_date: eventDateObj.toISOString(),
-        registration_deadline: regDeadlineObj.toISOString(),
+        event_date: new Date(`${eventDate}T00:00:00Z`).toISOString(),
+        registration_deadline: new Date(`${registrationDeadline}T23:59:59Z`).toISOString(),
         skills: skills.length > 0 ? skills : null,
         required_roles: roles.length > 0 ? roles : null,
         contact_email: contactEmail || null,
@@ -320,7 +317,7 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
           <input
             type="number"
             required
-            min="1"
+            min="0"
             value={openPositions}
             onChange={(e) => setOpenPositions(e.target.value)}
             className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold text-sm"

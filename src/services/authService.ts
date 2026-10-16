@@ -15,6 +15,11 @@ export const authService = {
 
     if (authError) throw authError;
 
+    // Supabase returns a dummy user with empty identities if account exists (to prevent enumeration)
+    if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+      throw new Error('An account with this email address already exists. Please log in.');
+    }
+
     return authData;
   },
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { authService } from '../services/authService';
+import { profileService } from '../services/profileService';
 import type { Profile } from '../types/database';
 import { AuthContext } from './authContextDef';
 
@@ -35,9 +36,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Fetch profile safely without throwing
+      // Fetch profile safely without throwing; ensure row exists for new users
       try {
-        const userProfile = await authService.getProfile(currentSession.user.id);
+        let userProfile = await authService.getProfile(currentSession.user.id);
+        if (!userProfile && currentSession.user) {
+          userProfile = await profileService.ensureProfile(currentSession.user);
+        }
         if (mounted && currentId === authRequestId) {
           setProfile(userProfile);
         }
@@ -48,7 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted && currentId === authRequestId) {
           setProfile(null);
         }
-      } finally {
+      }
+ finally {
         if (mounted && currentId === authRequestId) {
           setLoading(false);
         }
@@ -119,7 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Fetch profile without throwing or blocking
         try {
-          const userProfile = await authService.getProfile(data.session.user.id);
+          let userProfile = await authService.getProfile(data.session.user.id);
+          if (!userProfile && data.session.user) {
+            userProfile = await profileService.ensureProfile(data.session.user);
+          }
           setProfile(userProfile);
         } catch (profErr) {
           console.warn('[HackMate Auth] Profile load deferred after login:', profErr);

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { applicationService } from '../services/applicationService';
 import { ArrowRight, CheckCircle2, Clock, XCircle, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDisplayDate } from '../utils/formatters';
 
 export default function MyApplicationsPage() {
   const { user } = useAuth();
@@ -83,7 +84,7 @@ export default function MyApplicationsPage() {
               >
                 <div className="flex-1">
                   <div className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-3">
-                    <span>{new Date(app.created_at).toLocaleDateString()}</span>
+                    <span>{formatDisplayDate(app.created_at)}</span>
                     <span>•</span>
                     <span className="font-bold text-foreground">{app.hackathons?.mode}</span>
                   </div>

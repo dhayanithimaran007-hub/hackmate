@@ -6,6 +6,7 @@ import { hackathonService } from '../services/hackathonService';
 import { applicationService } from '../services/applicationService';
 import { supabase } from '../lib/supabase';
 import { motion } from 'framer-motion';
+import { formatDisplayDate } from '../utils/formatters';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -128,7 +129,7 @@ export default function DashboardPage() {
   const formatEventDate = (date: Date) => {
     try {
       if (isNaN(date.getTime())) return 'RECENT ACTIVITY';
-      return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${formatDisplayDate(date.toISOString())} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     } catch {
       return 'RECENT ACTIVITY';
     }
