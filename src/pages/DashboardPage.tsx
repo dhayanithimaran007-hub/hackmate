@@ -7,6 +7,7 @@ import { applicationService } from '../services/applicationService';
 import { supabase } from '../lib/supabase';
 import { motion } from 'framer-motion';
 import { formatDisplayDate } from '../utils/formatters';
+import { LightBeamButton } from '../components/ui/LightBeamButton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -197,9 +198,14 @@ export default function DashboardPage() {
               </div>
               <h2 className="font-display text-xl sm:text-2xl uppercase tracking-tight mb-2">POST A HACKATHON</h2>
               <p className="font-sans text-sm text-muted-foreground mb-6 flex-1">"I am organizing a team and need members."</p>
-              <Link to="/hackathons/new" className="inline-flex items-center justify-between w-full px-5 py-3.5 bg-foreground text-background hover:bg-accent hover:text-white font-mono text-xs sm:text-sm font-bold tracking-wider uppercase transition-colors border border-foreground hover:border-accent min-h-[48px]">
-                <span>CREATE HACKATHON</span> <ArrowRight className="w-4 h-4" />
-              </Link>
+              <LightBeamButton 
+                to="/hackathons/new" 
+                size="md"
+                className="w-full min-h-[48px]"
+                innerClassName="justify-between px-5 w-full"
+              >
+                <span>CREATE HACKATHON</span> <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </LightBeamButton>
             </motion.div>
             
             <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{delay:0.2}} className="h-full group flex flex-col p-6 md:p-10 border border-border bg-card hover:border-foreground transition-all duration-300 hover:-translate-y-1">
@@ -208,9 +214,14 @@ export default function DashboardPage() {
               </div>
               <h2 className="font-display text-xl sm:text-2xl uppercase tracking-tight mb-2">FIND A TEAM</h2>
               <p className="font-sans text-sm text-muted-foreground mb-6 flex-1">"I want to join a hackathon team."</p>
-              <Link to="/discover" className="inline-flex items-center justify-between w-full px-5 py-3.5 bg-foreground text-background hover:bg-accent hover:text-white font-mono text-xs sm:text-sm font-bold tracking-wider uppercase transition-colors border border-foreground hover:border-accent min-h-[48px]">
-                <span>DISCOVER HACKATHONS</span> <ArrowRight className="w-4 h-4" />
-              </Link>
+              <LightBeamButton 
+                to="/discover" 
+                size="md"
+                className="w-full min-h-[48px]"
+                innerClassName="justify-between px-5 w-full"
+              >
+                <span>DISCOVER HACKATHONS</span> <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </LightBeamButton>
             </motion.div>
           </div>
 

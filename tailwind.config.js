@@ -24,6 +24,11 @@ export default {
         accent: {
           DEFAULT: 'var(--accent)',
           foreground: 'var(--accent-foreground)',
+          strong: 'var(--accent-strong)',
+          hover: 'var(--accent-hover)',
+          subtle: 'var(--accent-subtle)',
+          border: 'var(--accent-border)',
+          violet: 'var(--accent-violet)',
         },
         destructive: {
           DEFAULT: 'var(--destructive)',

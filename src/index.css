@@ -22,13 +22,18 @@
   --secondary-foreground: #FFFFFF;
   --muted: #222222;
   --muted-foreground: #A8A8A8;
-  --accent: #FF4949;
+  --accent: #FF454A;
   --accent-foreground: #FFFFFF;
-  --destructive: #FF4949;
+  --accent-strong: #FF454A;
+  --accent-hover: #FF6165;
+  --accent-subtle: #2A1718;
+  --accent-border: #FF454A;
+  --accent-violet: #FF7579;
+  --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
   --border: #383838;
   --input: #171717;
-  --ring: #FF4949;
+  --ring: #FF454A;
   --radius: 0px;
 }
 
@@ -51,15 +56,20 @@
   --color-muted: #222222;
   --color-muted-foreground: #A8A8A8;
   
-  --color-accent: #FF4949;
+  --color-accent: #FF454A;
   --color-accent-foreground: #FFFFFF;
+  --color-accent-strong: #FF454A;
+  --color-accent-hover: #FF6165;
+  --color-accent-subtle: #2A1718;
+  --color-accent-border: #FF454A;
+  --color-accent-violet: #FF7579;
   
-  --color-destructive: #FF4949;
+  --color-destructive: #EF4444;
   --color-destructive-foreground: #FFFFFF;
   
   --color-border: #383838;
   --color-input: #171717;
-  --color-ring: #FF4949;
+  --color-ring: #FF454A;
 
   --radius-lg: 0px;
   --radius-md: 0px;
@@ -279,3 +289,158 @@ button {
     linear-gradient(to bottom, #303030 1px, transparent 1px);
   background-size: 32px 32px;
 }
+
+/* ==========================================================================
+   LightBeamButton Styles & Rotating Conic-Gradient Border Animations
+   ========================================================================== */
+
+@property --beam-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes beam-rotate {
+  from {
+    --beam-angle: 0deg;
+  }
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+.light-beam-wrapper {
+  --beam-c1: #FF454A;
+  --beam-c2: #FF7579;
+  --beam-c3: #FF2E34;
+  --beam-radius: 9999px;
+  --beam-duration: 4s;
+  --beam-border-width: 1.5px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--beam-border-width);
+  border-radius: var(--beam-radius) !important;
+  box-sizing: border-box;
+  text-decoration: none;
+  background: transparent;
+  isolation: isolate;
+  user-select: none;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.light-beam-wrapper,
+.light-beam-wrapper * {
+  border-radius: var(--beam-radius) !important;
+}
+
+/* Outer neon glow on hover */
+.light-beam-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--beam-radius) !important;
+  background: conic-gradient(
+    from var(--beam-angle) at 50% 50%,
+    transparent 0%,
+    var(--beam-c1) 20%,
+    var(--beam-c2) 50%,
+    var(--beam-c3) 80%,
+    transparent 100%
+  );
+  filter: blur(14px);
+  opacity: 0;
+  animation: beam-rotate var(--beam-duration) linear infinite;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.light-beam-wrapper:hover:not(:disabled):not([aria-disabled="true"]) .light-beam-glow {
+  opacity: 0.75;
+}
+
+/* Subtle dark base track so the border perimeter is cleanly defined */
+.light-beam-track {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius) !important;
+  background: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* The rotating conic-gradient light beam */
+.light-beam-border {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius) !important;
+  background: conic-gradient(
+    from var(--beam-angle) at 50% 50%,
+    transparent 0%,
+    var(--beam-c1) 20%,
+    var(--beam-c2) 50%,
+    var(--beam-c3) 80%,
+    transparent 100%
+  );
+  animation: beam-rotate var(--beam-duration) linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Inner content container - fully opaque to keep text readable */
+.light-beam-inner {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--beam-radius) - var(--beam-border-width)) !important;
+  background-color: #121215;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.light-beam-wrapper:hover:not(:disabled):not([aria-disabled="true"]) .light-beam-inner {
+  background-color: #18181f;
+}
+
+/* Disabled state */
+.light-beam-wrapper:disabled,
+.light-beam-wrapper[aria-disabled="true"] {
+  cursor: not-allowed !important;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.light-beam-wrapper:disabled .light-beam-border,
+.light-beam-wrapper[aria-disabled="true"] .light-beam-border,
+.light-beam-wrapper:disabled .light-beam-glow,
+.light-beam-wrapper[aria-disabled="true"] .light-beam-glow {
+  animation-play-state: paused;
+}
+
+/* Focus styles for keyboard accessibility */
+.light-beam-wrapper:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px #FF454A;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .light-beam-border,
+  .light-beam-glow {
+    animation: none !important;
+    --beam-angle: 120deg !important;
+  }
+}
+

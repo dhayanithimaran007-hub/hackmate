@@ -7,6 +7,7 @@ import type { Hackathon } from '../types/database';
 import { Settings, Users, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDisplayDate } from '../utils/formatters';
+import { LightBeamButton } from '../components/ui/LightBeamButton';
 
 export default function MyHackathonsPage() {
   const { user } = useAuth();
@@ -82,13 +83,14 @@ export default function MyHackathonsPage() {
             MANAGE YOUR POSTED HACKATHONS
           </p>
         </div>
-        <Link 
+        <LightBeamButton 
           to="/hackathons/new"
-          className="mt-6 md:mt-0 px-5 py-3 bg-foreground text-background font-mono text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-accent hover:text-white transition-all duration-300 flex items-center gap-2 min-h-[46px]"
+          size="md"
+          className="mt-6 md:mt-0"
         >
           <Plus size={16} />
-          POST HACKATHON
-        </Link>
+          <span>POST HACKATHON</span>
+        </LightBeamButton>
       </div>
 
       <div className="max-w-screen-2xl mx-auto px-4 md:px-12 w-full">
@@ -96,12 +98,12 @@ export default function MyHackathonsPage() {
           <div className="w-full p-12 md:p-20 border border-border bg-card flex flex-col items-center justify-center text-center">
             <h3 className="heading-section uppercase mb-3">NO HACKATHONS POSTED</h3>
             <p className="font-sans text-sm sm:text-base text-muted-foreground mb-6 max-w-md">You haven't posted any hackathons yet. Create one to start building your team.</p>
-            <Link 
+            <LightBeamButton 
               to="/hackathons/new"
-              className="px-6 py-3.5 bg-background border border-foreground text-foreground font-mono text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-foreground hover:text-background transition-colors duration-300 min-h-[48px] inline-flex items-center"
+              size="md"
             >
               POST YOUR FIRST HACKATHON
-            </Link>
+            </LightBeamButton>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

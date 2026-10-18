@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, ExternalLink, ShieldCheck, Terminal, ShieldAlert, Ph
 import { motion } from 'framer-motion';
 import { profileService } from '../services/profileService';
 import { formatExternalUrl, formatWhatsAppUrl, formatTelUrl, formatDisplayDate } from '../utils/formatters';
+import { LightBeamButton } from '../components/ui/LightBeamButton';
 
 export default function HackathonDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -411,12 +412,14 @@ export default function HackathonDetailsPage() {
                         value={applyMessage} onChange={e=>setApplyMessage(e.target.value)}
                         className="w-full px-3.5 py-2.5 bg-background border border-border font-sans text-xs sm:text-sm resize-none"
                       />
-                      <button 
-                        type="submit" disabled={submitting}
-                        className="w-full py-3.5 bg-accent text-accent-foreground font-mono font-bold text-xs sm:text-sm uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50 min-h-[48px]"
+                      <LightBeamButton 
+                        type="submit" 
+                        disabled={submitting}
+                        size="md"
+                        className="w-full min-h-[48px]"
                       >
                         {submitting ? 'SENDING...' : 'CONFIRM APPLICATION'}
-                      </button>
+                      </LightBeamButton>
                       <button 
                         type="button" onClick={() => setShowApplyForm(false)}
                         className="w-full py-2 font-mono text-xs text-muted-foreground uppercase hover:text-foreground"
@@ -425,7 +428,7 @@ export default function HackathonDetailsPage() {
                       </button>
                     </motion.form>
                   ) : (
-                    <button 
+                    <LightBeamButton 
                       onClick={() => {
                         if (!user) {
                           navigate('/login');
@@ -436,10 +439,11 @@ export default function HackathonDetailsPage() {
                         setShowApplyForm(true);
                       }}
                       disabled={hackathon.status !== 'OPEN'}
-                      className="w-full py-3.5 px-6 bg-foreground text-background font-mono font-bold text-sm uppercase tracking-wider hover:bg-accent hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
+                      size="md"
+                      className="w-full min-h-[48px]"
                     >
                       APPLY TO JOIN
-                    </button>
+                    </LightBeamButton>
                   )}
                 </div>
               )}

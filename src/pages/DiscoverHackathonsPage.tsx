@@ -4,6 +4,7 @@ import { hackathonService } from '../services/hackathonService';
 import { ArrowRight, Search, Filter, Users, Calendar, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDisplayDate } from '../utils/formatters';
+import { LightBeamButton } from '../components/ui/LightBeamButton';
 
 export default function DiscoverHackathonsPage() {
   const [hackathons, setHackathons] = useState<any[]>([]);
@@ -103,9 +104,13 @@ export default function DiscoverHackathonsPage() {
               </select>
               <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
             </div>
-            <button type="submit" className="px-6 h-[50px] bg-foreground text-background font-mono font-bold text-sm tracking-wider uppercase hover:bg-accent hover:text-white transition-colors flex items-center justify-center shrink-0">
+            <LightBeamButton 
+              type="submit" 
+              size="md" 
+              className="h-[50px] shrink-0"
+            >
               SEARCH
-            </button>
+            </LightBeamButton>
           </div>
         </form>
       </div>
@@ -123,12 +128,12 @@ export default function DiscoverHackathonsPage() {
             <Search className="w-10 h-10 text-muted-foreground mb-4" />
             <h3 className="heading-section uppercase mb-3">NO HACKATHONS AVAILABLE YET</h3>
             <p className="font-sans text-muted-foreground text-sm sm:text-base mb-6 max-w-md">Try adjusting your search criteria or be the first to organize one.</p>
-            <button 
+            <LightBeamButton 
               onClick={() => navigate('/hackathons/new')}
-              className="px-6 py-3.5 bg-accent text-accent-foreground font-mono font-bold text-xs sm:text-sm tracking-wider uppercase hover:bg-accent/80 transition-all"
+              size="md"
             >
               CREATE A HACKATHON
-            </button>
+            </LightBeamButton>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">

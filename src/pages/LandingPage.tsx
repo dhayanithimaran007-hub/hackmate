@@ -6,6 +6,7 @@ import {
   Rocket, AlertCircle
 } from 'lucide-react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import { LightBeamButton } from '../components/ui/LightBeamButton';
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -97,13 +98,14 @@ export default function LandingPage() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto self-center md:self-start mt-2 z-10">
-            <Link 
+            <LightBeamButton 
               to="/hackathons/new" 
-              className="btn-hero-primary group"
+              size="lg"
+              className="h-[52px]"
             >
-              <span className="group-hover:translate-x-0.5 transition-transform">POST A HACKATHON</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+              <span>POST A HACKATHON</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </LightBeamButton>
             <Link 
               to="/discover" 
               className="btn-hero-secondary"
@@ -396,9 +398,9 @@ export default function LandingPage() {
               <p className="font-sans text-sm sm:text-base text-muted-foreground max-w-md mx-auto mb-6">
                 Discover hackathons that match your skills, interests, and preferred mode of collaboration.
               </p>
-              <Link to="/discover" className="btn-hero-primary">
-                Launch Discovery Engine
-              </Link>
+              <LightBeamButton to="/discover" size="md">
+                <span>LAUNCH DISCOVERY ENGINE</span>
+              </LightBeamButton>
             </div>
           </div>
         </div>
@@ -487,13 +489,14 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link 
+            <LightBeamButton 
               to="/hackathons/new" 
-              className="btn-hero-primary group"
+              size="lg"
+              className="h-[52px]"
             >
               <span>POST A HACKATHON</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </LightBeamButton>
             <Link 
               to="/discover" 
               className="btn-hero-secondary"
