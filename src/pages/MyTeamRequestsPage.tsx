@@ -5,7 +5,7 @@ import { hackathonService } from '../services/hackathonService';
 import { applicationService } from '../services/applicationService';
 import { profileService } from '../services/profileService';
 import { matchingService } from '../services/matchingService';
-import { Check, X, ShieldCheck, User, ExternalLink } from 'lucide-react';
+import { Check, X, ShieldCheck, User, ExternalLink, RotateCcw, AlertTriangle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatExternalUrl } from '../utils/formatters';
 import EarthBackground from '../components/ui/EarthBackground';
@@ -22,6 +22,33 @@ export default function MyTeamRequestsPage() {
   const [extraContacts, setExtraContacts] = useState<Record<string, { email?: string; phone?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState('');
+
+  // Withdrawal & action state
+  const [withdrawingApp, setWithdrawingApp] = useState<any | null>(null);
+  const [isWithdrawing, setIsWithdrawing] = useState<boolean>(false);
+  const [withdrawError, setWithdrawError] = useState<string>('');
+  const [activeActionId, setActiveActionId] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string>('');
+
+  const loadApplications = async (hackId: string, currentHacks: any[]) => {
+    if (!hackId) return;
+    try {
+      const apps = await applicationService.getApplicationsForHackathon(hackId);
+      const hackathon = currentHacks.find((h: any) => h.id === hackId);
+      if (hackathon) {
+        const appsWithScores = apps.map((app: any) => {
+          const matchData = matchingService.evaluateApplication(hackathon, app);
+          const explanation = matchingService.generateExplanation(matchData, hackathon, app);
+          return { ...app, matchData, explanation };
+        });
+        setApplications(appsWithScores.sort((a: any, b: any) => (b.matchData?.matchScore || 0) - (a.matchData?.matchScore || 0)));
+      } else {
+        setApplications(apps);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -46,13 +73,11 @@ export default function MyTeamRequestsPage() {
   }, [user, targetHackathonId]);
 
   useEffect(() => {
-    const fetchApps = async () => {
-      if (!selectedHackathonId) return;
-      setLoading(true);
-      try {
-        const apps = await applicationService.getApplicationsForHackathon(selectedHackathonId);
-        
-        // Calculate match scores if pending
+    if (!selectedHackathonId) return;
+    let isCurrent = true;
+    applicationService.getApplicationsForHackathon(selectedHackathonId)
+      .then((apps) => {
+        if (!isCurrent) return;
         const hackathon = hackathons.find((h: any) => h.id === selectedHackathonId);
         if (hackathon) {
           const appsWithScores = apps.map((app: any) => {
@@ -60,42 +85,93 @@ export default function MyTeamRequestsPage() {
             const explanation = matchingService.generateExplanation(matchData, hackathon, app);
             return { ...app, matchData, explanation };
           });
-          // Sort by match score descending
           setApplications(appsWithScores.sort((a: any, b: any) => (b.matchData?.matchScore || 0) - (a.matchData?.matchScore || 0)));
         } else {
           setApplications(apps);
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (isCurrent) setLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
     };
-    fetchApps();
   }, [selectedHackathonId, hackathons]);
 
   const handleAction = async (appId: string, status: 'accepted' | 'rejected') => {
+    if (activeActionId) return;
+    setActiveActionId(appId);
     setActionError('');
     try {
       await applicationService.updateApplicationStatus(appId, status);
       // Re-fetch hackathons so updated open_positions is reflected
+      let updatedHacks = hackathons;
       if (user) {
         const freshHacks = await hackathonService.getMyHackathons(user.id);
-        setHackathons(freshHacks.filter((h: any) => h.status === 'OPEN'));
+        updatedHacks = freshHacks.filter((h: any) => h.status === 'OPEN');
+        setHackathons(updatedHacks);
       }
-      // Refresh applications
-      const apps = await applicationService.getApplicationsForHackathon(selectedHackathonId);
-      const hackathon = hackathons.find((h: any) => h.id === selectedHackathonId);
-      if (hackathon) {
-        const appsWithScores = apps.map((app: any) => {
-          const matchData = matchingService.evaluateApplication(hackathon, app);
-          const explanation = matchingService.generateExplanation(matchData, hackathon, app);
-          return { ...app, matchData, explanation };
-        });
-        setApplications(appsWithScores.sort((a: any, b: any) => (b.matchData?.matchScore || 0) - (a.matchData?.matchScore || 0)));
-      }
+      await loadApplications(selectedHackathonId, updatedHacks);
+      setSuccessToast(status === 'accepted' ? 'Application accepted!' : 'Application rejected.');
+      setTimeout(() => setSuccessToast(''), 3500);
     } catch (err: any) {
       setActionError(err.message || 'Failed to update application. Please try again.');
+    } finally {
+      setActiveActionId(null);
+    }
+  };
+
+  const handleWithdrawClick = (app: any) => {
+    if (app.status === 'rejected') {
+      return;
+    }
+    setWithdrawingApp(app);
+    setWithdrawError('');
+  };
+
+  const handleCancelWithdraw = () => {
+    if (isWithdrawing) return;
+    setWithdrawingApp(null);
+    setWithdrawError('');
+  };
+
+  const handleConfirmWithdraw = async () => {
+    if (!withdrawingApp || isWithdrawing) return;
+    setIsWithdrawing(true);
+    setActiveActionId(withdrawingApp.id);
+    setWithdrawError('');
+
+    try {
+      await applicationService.withdrawApplication(
+        withdrawingApp.id,
+        withdrawingApp.hackathon_id,
+        withdrawingApp.applicant_id
+      );
+
+      // Refresh hackathons & applications immediately
+      let updatedHacks = hackathons;
+      if (user) {
+        const freshHacks = await hackathonService.getMyHackathons(user.id);
+        updatedHacks = freshHacks.filter((h: any) => h.status === 'OPEN');
+        setHackathons(updatedHacks);
+      }
+      await loadApplications(selectedHackathonId, updatedHacks);
+
+      const toastMessage = withdrawingApp.status === 'accepted'
+        ? "Team member acceptance withdrawn successfully."
+        : "Team request withdrawn successfully.";
+      setSuccessToast(toastMessage);
+      setTimeout(() => setSuccessToast(''), 3500);
+
+      setWithdrawingApp(null);
+    } catch (err: any) {
+      console.error('Withdraw error:', err);
+      setWithdrawError(err.message || 'Failed to withdraw application. Please try again.');
+    } finally {
+      setIsWithdrawing(false);
+      setActiveActionId(null);
     }
   };
 
@@ -299,33 +375,93 @@ export default function MyTeamRequestsPage() {
                         </div>
                       </div>
 
-                      {/* Status / Accept & Reject */}
-                      {isPending ? (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button 
-                            onClick={() => handleAction(app.id, 'accepted')} 
-                            className="h-8 px-3.5 bg-accent hover:bg-hover-red text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors flex items-center gap-1.5"
-                          >
-                            <Check size={13} />
-                            <span>ACCEPT</span>
-                          </button>
-                          <button 
-                            onClick={() => handleAction(app.id, 'rejected')} 
-                            className="h-8 px-3.5 border border-border hover:border-red-500 text-muted-foreground hover:text-red-400 font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors flex items-center gap-1.5"
-                          >
-                            <X size={13} />
-                            <span>REJECT</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <span className={`font-sans text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-sm border ${
-                          isAccepted 
-                            ? 'bg-accent/10 border-accent/40 text-accent' 
-                            : 'bg-surface-elevated border-border text-muted-foreground'
-                        }`}>
-                          {app.status}
-                        </span>
-                      )}
+                      {/* Status / Accept, Reject & Withdraw Actions */}
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                        {isPending && (
+                          <>
+                            <button 
+                              onClick={() => handleAction(app.id, 'accepted')} 
+                              disabled={activeActionId === app.id}
+                              className="h-8 px-3.5 bg-accent hover:bg-hover-red text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                              title="Accept builder onto your squad"
+                            >
+                              <Check size={13} />
+                              <span>ACCEPT</span>
+                            </button>
+                            <button 
+                              onClick={() => handleAction(app.id, 'rejected')} 
+                              disabled={activeActionId === app.id}
+                              className="h-8 px-3.5 border border-border hover:border-red-500 text-muted-foreground hover:text-red-400 font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                              title="Reject application"
+                            >
+                              <X size={13} />
+                              <span>REJECT</span>
+                            </button>
+                            <button 
+                              id={`withdraw-btn-${app.id}`}
+                              onClick={() => handleWithdrawClick(app)}
+                              disabled={activeActionId === app.id}
+                              className="h-8 px-3.5 bg-[#0E1013] border border-accent text-accent hover:bg-accent/10 hover:border-accent font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-all duration-150 flex items-center gap-1.5 disabled:opacity-50"
+                              title="Withdraw application request"
+                            >
+                              {activeActionId === app.id && isWithdrawing ? (
+                                <>
+                                  <Loader2 size={13} className="animate-spin" />
+                                  <span>Withdrawing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw size={13} />
+                                  <span>Withdraw</span>
+                                </>
+                              )}
+                            </button>
+                          </>
+                        )}
+
+                        {isAccepted && (
+                          <>
+                            <span className="font-sans text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-sm border bg-accent/10 border-accent/40 text-accent">
+                              accepted
+                            </span>
+                            <button 
+                              id={`withdraw-btn-${app.id}`}
+                              onClick={() => handleWithdrawClick(app)}
+                              disabled={activeActionId === app.id}
+                              className="h-8 px-3.5 bg-[#0E1013] border border-accent text-accent hover:bg-accent/10 hover:border-accent font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-all duration-150 flex items-center gap-1.5 disabled:opacity-50"
+                              title="Withdraw acceptance and revoke team membership"
+                            >
+                              {activeActionId === app.id && isWithdrawing ? (
+                                <>
+                                  <Loader2 size={13} className="animate-spin" />
+                                  <span>Withdrawing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw size={13} />
+                                  <span>Withdraw</span>
+                                </>
+                              )}
+                            </button>
+                          </>
+                        )}
+
+                        {isRejected && (
+                          <>
+                            <span className="font-sans text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-sm border bg-surface-elevated border-border text-muted-foreground">
+                              rejected
+                            </span>
+                            <button 
+                              disabled
+                              className="h-8 px-3.5 bg-[#0E1013]/40 border border-border/40 text-muted-foreground/50 font-sans text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-not-allowed opacity-50"
+                              title="Application is already withdrawn or rejected"
+                            >
+                              <RotateCcw size={13} />
+                              <span>Withdrawn</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     {/* Applicant Pitch & Skills */}
@@ -424,6 +560,97 @@ export default function MyTeamRequestsPage() {
         </div>
 
       </div>
+
+      {/* Success Notification Toast */}
+      {successToast && (
+        <div 
+          id="withdraw-success-toast"
+          className="fixed bottom-6 right-6 bg-[#0E1013] border border-accent/60 text-foreground px-5 py-3 font-sans text-xs font-semibold tracking-wider uppercase shadow-2xl z-50 rounded-sm flex items-center gap-2.5"
+        >
+          <Check size={15} className="text-accent shrink-0" />
+          <span>{successToast}</span>
+        </div>
+      )}
+
+      {/* Confirmation Dialog Modal */}
+      {withdrawingApp && (
+        <div 
+          id="withdraw-confirmation-modal"
+          className="fixed inset-0 bg-[#090A0C]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border p-6 max-w-md w-full shadow-2xl rounded-sm flex flex-col gap-4 text-foreground"
+          >
+            <div className="flex items-center gap-2.5 text-accent">
+              <AlertTriangle size={20} className="shrink-0 text-accent" />
+              <h3 className="font-bold text-base sm:text-lg uppercase tracking-tight text-foreground">
+                CONFIRM WITHDRAWAL
+              </h3>
+            </div>
+            
+            <div>
+              <p className="font-sans text-xs text-text-secondary mb-3 leading-relaxed">
+                {withdrawingApp.status === 'accepted'
+                  ? "Are you sure you want to withdraw this team member's acceptance? This action may revoke their accepted status."
+                  : "Are you sure you want to withdraw this application request? This action will reject the application."}
+              </p>
+
+              <div className="bg-[#0E1013] p-3 border border-border rounded-sm">
+                <div className="font-semibold text-xs text-foreground mb-0.5">
+                  {withdrawingApp.profiles?.full_name || withdrawingApp.profiles?.username || 'Applicant'}
+                </div>
+                <div className="font-mono text-[11px] text-text-secondary">
+                  Role: <span className="text-foreground font-medium">{withdrawingApp.role}</span>
+                  {withdrawingApp.status ? ` • Current Status: ${withdrawingApp.status.toUpperCase()}` : ''}
+                </div>
+              </div>
+
+              {withdrawingApp.status === 'accepted' && (
+                <p className="font-sans text-red-400 text-xs mt-2.5 leading-relaxed">
+                  Revoking this acceptance will remove the member from your squad and restore open team slots.
+                </p>
+              )}
+            </div>
+
+            {withdrawError && (
+              <div 
+                id="withdraw-error-alert"
+                className="bg-red-500/10 border border-red-500/40 p-2.5 font-sans text-xs text-red-400 rounded-sm"
+              >
+                {withdrawError}
+              </div>
+            )}
+
+            <div className="flex gap-2.5 mt-2">
+              <button 
+                id="cancel-withdraw-btn"
+                onClick={handleCancelWithdraw}
+                disabled={isWithdrawing}
+                className="flex-1 h-9 px-4 bg-surface-elevated border border-border text-foreground font-sans text-xs font-semibold uppercase tracking-wider hover:bg-[#16191E] transition-colors disabled:opacity-50 rounded-sm"
+              >
+                CANCEL
+              </button>
+              <button 
+                id="confirm-withdraw-btn"
+                onClick={handleConfirmWithdraw}
+                disabled={isWithdrawing}
+                className="flex-1 h-9 px-4 bg-accent hover:bg-hover-red text-white font-sans text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 rounded-sm flex items-center justify-center gap-1.5"
+              >
+                {isWithdrawing ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    <span>WITHDRAWING...</span>
+                  </>
+                ) : (
+                  <span>CONFIRM WITHDRAW</span>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

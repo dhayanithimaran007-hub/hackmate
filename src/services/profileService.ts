@@ -23,36 +23,110 @@ export const profileService = {
     }
   },
 
-  async getProfileByUsername(identifier: string): Promise<Profile | null> {
+  async getProfileByUsername(identifier: string, profileIdHint?: string): Promise<Profile | null> {
     try {
-      if (!identifier) return null;
+      if (!identifier && !profileIdHint) return null;
 
-      // 1. Try finding by exact username
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', identifier)
-        .maybeSingle();
-        
-      if (data) return data;
-
-      // 2. If not found and identifier is a valid UUID, lookup by profile ID
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
-      if (isUuid) {
-        return await this.getProfile(identifier);
+      // 0. If a valid profile ID hint is provided, prioritize direct ID lookup
+      if (profileIdHint) {
+        const byHint = await this.getProfile(profileIdHint);
+        if (byHint) return byHint;
       }
 
-      // 3. Fallback: case-insensitive match on username
-      const { data: fallbackData } = await supabase
+      const raw = (identifier || '').trim();
+      const cleanId = raw.startsWith('@') ? raw.slice(1).trim() : raw;
+      if (!cleanId) return null;
+
+      // 1. If identifier is a valid UUID, lookup by profile ID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+      if (isUuid) {
+        const byId = await this.getProfile(cleanId);
+        if (byId) return byId;
+      }
+
+      // 2. Exact match on username
+      const { data: exactMatch, error: exactErr } = await supabase
         .from('profiles')
         .select('*')
-        .ilike('username', identifier)
+        .eq('username', cleanId)
+        .maybeSingle();
+        
+      if (exactErr && exactErr.code !== 'PGRST116') {
+        throw exactErr;
+      }
+      if (exactMatch) return exactMatch;
+
+      // 3. Fallback: case-insensitive match on username
+      const { data: ilikeMatch, error: ilikeErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('username', cleanId)
         .maybeSingle();
 
-      return fallbackData || null;
-    } catch (err) {
-      console.warn('Unexpected error in getProfileByUsername:', err);
+      if (ilikeErr && ilikeErr.code !== 'PGRST116') {
+        throw ilikeErr;
+      }
+      if (ilikeMatch) return ilikeMatch;
+
+      // 4. Fallback: case-insensitive match on full_name
+      const { data: nameMatch, error: nameErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('full_name', cleanId)
+        .maybeSingle();
+
+      if (nameErr && nameErr.code !== 'PGRST116') {
+        throw nameErr;
+      }
+      if (nameMatch) return nameMatch;
+
+      // 5. Normalized / sanitized full_name & prefix matching
+      // When a user has not explicitly set a username, the directory displays sanitizeUsername(full_name).
+      // E.g. "Manisha " -> "manisha", "Dharun Kumar" -> "dharunkumar" or "dharun-kumar".
+      const targetNormalized = sanitizeUsername(cleanId);
+      const cleanLower = cleanId.toLowerCase().replace(/[-_]/g, '');
+
+      const { data: allProfiles, error: allErr } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (allErr) throw allErr;
+
+      if (allProfiles && allProfiles.length > 0) {
+        const matched = allProfiles.find(p => {
+          if (p.username) {
+            const pUserNorm = sanitizeUsername(p.username);
+            if (pUserNorm === targetNormalized || pUserNorm.replace(/[-_]/g, '') === cleanLower) {
+              return true;
+            }
+          }
+          if (p.full_name) {
+            const pNameNorm = sanitizeUsername(p.full_name);
+            const pNameClean = p.full_name.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (
+              pNameNorm === targetNormalized || 
+              pNameClean === cleanLower || 
+              p.full_name.trim().toLowerCase() === cleanId.toLowerCase()
+            ) {
+              return true;
+            }
+          }
+          if (p.id) {
+            const pIdLower = p.id.toLowerCase();
+            if (pIdLower.startsWith(cleanId.toLowerCase()) || pIdLower.replace(/-/g, '').startsWith(cleanLower)) {
+              return true;
+            }
+          }
+          return false;
+        });
+
+        if (matched) return matched;
+      }
+
       return null;
+    } catch (err) {
+      console.error('Error in profileService.getProfileByUsername:', err);
+      throw err;
     }
   },
 

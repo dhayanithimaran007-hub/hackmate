@@ -216,6 +216,7 @@ export default function DiscoverDevelopersPage() {
                 >
                   <Link 
                     to={`/profile/${handle}`}
+                    state={{ profileId: profile.id, initialProfile: profile }}
                     className="group block h-full bg-card border border-border hover:border-accent/70 transition-all duration-200 rounded-sm p-4 sm:p-5 flex flex-col justify-between"
                   >
                     <div>

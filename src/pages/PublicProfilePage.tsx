@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { profileService } from '../services/profileService';
 import type { Profile, Project, HackathonExperience } from '../types/database';
 import { 
   Globe, MapPin, GraduationCap, Building, Code2, Briefcase, 
-  ExternalLink, Mail, Copy, Check, Lock, ArrowLeft 
+  ExternalLink, Mail, Copy, Check, Lock, ArrowLeft, AlertTriangle, RefreshCw, Loader2 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatExternalUrl, sanitizeUsername } from '../utils/formatters';
@@ -22,11 +22,16 @@ const getInitials = (name?: string | null) => {
 
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
+  const location = useLocation();
+  const profileIdHint = location.state?.profileId;
+  const initialProfile = location.state?.initialProfile;
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(initialProfile || null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [experiences, setExperiences] = useState<HackathonExperience[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialProfile);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
 
@@ -42,33 +47,86 @@ export default function PublicProfilePage() {
     setTimeout(() => setCopiedPhone(false), 2000);
   };
 
+  const handleRetry = () => {
+    setLoading(true);
+    setFetchError(null);
+    setRetryCount(c => c + 1);
+  };
+
   useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!username) return;
-      try {
-        const data = await profileService.getProfileByUsername(username);
+    let isCurrent = true;
+    if (!username && !profileIdHint) return;
+
+    profileService.getProfileByUsername(username || '', profileIdHint)
+      .then(async (data) => {
+        if (!isCurrent) return;
         if (data) {
           setProfile(data);
           const [projData, expData] = await Promise.all([
-            profileService.getProjects(data.id),
-            profileService.getHackathonExperience(data.id)
+            profileService.getProjects(data.id).catch(() => []),
+            profileService.getHackathonExperience(data.id).catch(() => [])
           ]);
+          if (!isCurrent) return;
           setProjects(projData || []);
           setExperiences(expData || []);
+        } else {
+          setProfile(null);
         }
-      } catch (err) {
+      })
+      .catch((err: any) => {
+        if (!isCurrent) return;
         console.error('Failed to load profile', err);
-      } finally {
-        setLoading(false);
-      }
+        setFetchError(err.message || 'Unable to connect to database. Please check your network connection.');
+      })
+      .finally(() => {
+        if (isCurrent) setLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
     };
-    fetchProfileData();
-  }, [username]);
+  }, [username, profileIdHint, retryCount]);
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
-        Retrieving developer credentials...
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background text-foreground gap-3">
+        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+        <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
+          Retrieving developer credentials...
+        </span>
+      </div>
+    );
+  }
+
+  if (fetchError && !profile) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background text-foreground">
+        <div className="max-w-md w-full p-6 border border-red-500/40 bg-card rounded-sm shadow-xl flex flex-col items-center">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-4 text-accent">
+            <AlertTriangle size={24} />
+          </div>
+          <h2 className="text-xl font-bold uppercase tracking-tight text-foreground mb-2">
+            UNABLE TO LOAD PROFILE
+          </h2>
+          <p className="font-sans text-xs text-text-secondary mb-5 leading-relaxed">
+            {fetchError}
+          </p>
+          <div className="flex gap-3 w-full">
+            <Link 
+              to="/developers" 
+              className="flex-1 h-9 px-4 bg-surface-elevated border border-border text-foreground font-mono text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center justify-center hover:bg-[#16191E] transition-colors"
+            >
+              Back to Directory
+            </Link>
+            <button
+              onClick={handleRetry}
+              className="flex-1 h-9 px-4 bg-accent hover:bg-hover-red text-white font-mono text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <RefreshCw size={13} />
+              <span>Retry</span>
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -76,16 +134,18 @@ export default function PublicProfilePage() {
   if (!profile) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background text-foreground">
-        <h2 className="text-xl font-bold uppercase mb-2">DEVELOPER NOT FOUND</h2>
-        <p className="font-sans text-xs sm:text-sm text-text-secondary mb-6">
-          The user @{username} does not exist or has not set up their profile.
-        </p>
-        <Link 
-          to="/developers" 
-          className="h-10 px-5 bg-accent text-white font-mono text-xs font-bold uppercase rounded-sm inline-flex items-center hover:bg-hover-red transition-all"
-        >
-          Discover Developers
-        </Link>
+        <div className="max-w-md w-full p-6 border border-border bg-card rounded-sm shadow-xl flex flex-col items-center">
+          <h2 className="text-xl font-bold uppercase tracking-tight text-foreground mb-2">DEVELOPER NOT FOUND</h2>
+          <p className="font-sans text-xs sm:text-sm text-text-secondary mb-6 leading-relaxed">
+            The user @{username} does not exist or has not set up their profile.
+          </p>
+          <Link 
+            to="/developers" 
+            className="h-9 px-5 bg-accent text-white font-mono text-xs font-bold uppercase tracking-wider rounded-sm inline-flex items-center hover:bg-hover-red transition-all"
+          >
+            Discover Developers
+          </Link>
+        </div>
       </div>
     );
   }
@@ -262,17 +322,16 @@ export default function PublicProfilePage() {
           
           {/* Left Column: Bio, Contact, Skills */}
           <div className="lg:col-span-1 flex flex-col gap-6">
-            {profile.bio && (
-              <div className="p-5 rounded-sm bg-card border border-border">
-                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <Briefcase size={14} className="text-accent" />
-                  <span>ABOUT</span>
-                </h3>
-                <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
-                  {profile.bio}
-                </p>
-              </div>
-            )}
+            {/* About Card */}
+            <div className="p-5 rounded-sm bg-card border border-border">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                <Briefcase size={14} className="text-accent" />
+                <span>ABOUT</span>
+              </h3>
+              <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                {profile.bio || 'This builder has not added an about bio yet.'}
+              </p>
+            </div>
 
             {/* Contact Details Card */}
             <div className="p-5 rounded-sm bg-card border border-border">
@@ -335,13 +394,13 @@ export default function PublicProfilePage() {
               )}
             </div>
 
-            {/* Skills */}
-            {profile.skills && profile.skills.length > 0 && (
-              <div className="p-5 rounded-sm bg-card border border-border">
-                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <Code2 size={14} className="text-accent" />
-                  <span>TECHNICAL SKILLS</span>
-                </h3>
+            {/* Technical Skills */}
+            <div className="p-5 rounded-sm bg-card border border-border">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                <Code2 size={14} className="text-accent" />
+                <span>TECHNICAL SKILLS</span>
+              </h3>
+              {profile.skills && profile.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {profile.skills.map((skill, index) => (
                     <span 
@@ -352,8 +411,12 @@ export default function PublicProfilePage() {
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="font-mono text-xs text-muted-foreground italic py-1">
+                  No technical skills listed yet.
+                </p>
+              )}
+            </div>
 
             {/* Preferred Roles */}
             {profile.preferred_roles && profile.preferred_roles.length > 0 && (
