@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { hackathonService } from '../services/hackathonService';
 import { HackathonForm } from '../components/hackathons/HackathonForm';
 import { useAuth } from '../hooks/useAuth';
 import type { Hackathon } from '../types/database';
+import EarthBackground from '../components/ui/EarthBackground';
 
 export default function EditHackathonPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,32 +52,39 @@ export default function EditHackathonPage() {
 
   if (!hackathon) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[400px]">
-        <h2 className="heading-section mb-3">HACKATHON NOT FOUND</h2>
-        <p className="font-mono text-xs text-muted-foreground uppercase mb-6">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[400px] bg-background text-foreground">
+        <h2 className="text-xl font-bold uppercase mb-2">HACKATHON NOT FOUND</h2>
+        <p className="font-sans text-xs sm:text-sm text-text-secondary mb-6 max-w-md">
           The requested hackathon could not be found or you do not have permission to edit it.
         </p>
         <button
           type="button"
           onClick={() => navigate('/hackathons')}
-          className="px-6 py-3 bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider hover:bg-accent transition-colors min-h-[44px]"
+          className="h-10 px-5 bg-accent text-white font-mono text-xs font-bold uppercase tracking-wider rounded-sm hover:bg-hover-red transition-all"
         >
-          RETURN TO MY HACKATHONS
+          Return to My Hackathons
         </button>
       </div>
     );
   }
 
   return (
-    <div className="w-full flex flex-col py-12 md:py-24">
-      <div className="max-w-screen-2xl mx-auto px-4 md:px-12 w-full mb-10 text-center">
-        <h1 className="heading-page mb-3">EDIT HACKATHON</h1>
-        <p className="font-mono text-xs sm:text-sm tracking-wider text-muted-foreground uppercase">
-          UPDATE TEAM REQUIREMENTS
+    <div className="flex-1 w-full flex flex-col relative overflow-hidden bg-background text-foreground">
+      {/* Subtle orbital curves */}
+      <EarthBackground variant="minimal" />
+
+      <div className="relative z-10 w-full max-w-screen-2xl mx-auto px-4 md:px-8 pt-10 pb-6 md:pt-14 md:pb-8 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-foreground leading-tight">
+          EDIT <span className="text-accent">HACKATHON.</span>
+        </h1>
+        <p className="mt-3 text-sm sm:text-base text-text-secondary font-sans max-w-md mx-auto leading-relaxed">
+          Update team requirements, open positions, and competition details.
         </p>
       </div>
 
-      <HackathonForm initialData={hackathon} isEditing />
+      <div className="relative z-10 w-full px-4 md:px-8 pb-16">
+        <HackathonForm initialData={hackathon} isEditing />
+      </div>
     </div>
   );
 }

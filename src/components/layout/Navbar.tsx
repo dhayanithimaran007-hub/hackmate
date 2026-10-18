@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User as UserIcon, LogOut } from 'lucide-react';
 
 export default function Navbar() {
   const { user, profile, logout } = useAuth();
@@ -23,64 +23,96 @@ export default function Navbar() {
     if (path.startsWith('/#')) {
       return location.hash === path.substring(1);
     }
-    return location.pathname === path || 
-           (path !== '/hackathons' && path !== '/' && location.pathname.startsWith(`${path}/`)) || 
-           (path === '/hackathons' && location.pathname.startsWith('/hackathons') && !location.pathname.startsWith('/discover') && location.pathname !== '/hackathons/new');
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    if (path === '/hackathons') {
+      return location.pathname.startsWith('/hackathons') && 
+             !location.pathname.startsWith('/hackathons/new') &&
+             !location.pathname.startsWith('/discover');
+    }
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
-  const navLinkClass = (active: boolean) => 
-    `relative text-xs lg:text-[13px] font-mono font-bold tracking-wider uppercase transition-colors duration-300 py-2 ${
-      active ? 'text-accent' : 'text-foreground hover:text-accent'
+  const navLinkClass = (active: boolean) =>
+    `relative text-[13px] font-sans font-medium tracking-wide uppercase transition-colors duration-200 py-1.5 px-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent rounded-sm ${
+      active ? 'text-accent' : 'text-text-secondary hover:text-foreground'
     }`;
 
   const mobileNavLinkClass = (active: boolean) =>
-    `block py-3 px-4 font-mono text-sm font-bold tracking-wider uppercase border-b border-border/60 transition-colors ${
-      active ? 'text-accent bg-accent/10 border-l-2 border-l-accent' : 'text-foreground hover:bg-muted/30'
+    `block py-3 px-4 font-sans text-sm font-medium tracking-wide uppercase border-b border-border/50 transition-colors ${
+      active 
+        ? 'text-accent bg-accent/10 border-l-2 border-l-accent' 
+        : 'text-text-secondary hover:text-foreground hover:bg-muted/40'
     }`;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/95 border-b border-border backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
+    <header className="sticky top-0 z-50 w-full bg-[#090A0C]/90 border-b border-border backdrop-blur-md">
+      <div className="flex h-14 items-center justify-between px-4 md:px-8 max-w-screen-2xl mx-auto w-full">
         
         {/* Left: Brand */}
-        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 group">
-          <span className="font-display text-2xl tracking-tight uppercase group-hover:tracking-normal transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+        <Link 
+          to={user ? "/dashboard" : "/"} 
+          className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent rounded-sm"
+        >
+          <span className="font-bold text-xl sm:text-2xl tracking-tight uppercase transition-colors">
             HACK<span className="text-accent">MATE</span>
           </span>
+          <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-accent/80 animate-pulse ml-0.5" />
         </Link>
 
         {/* Center: Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8 relative">
+        <nav className="hidden md:flex items-center gap-5 lg:gap-7 relative">
           {user ? (
             <>
               <Link to="/discover" className={navLinkClass(isActive('/discover'))}>
                 DISCOVER HACKATHONS
                 {isActive('/discover') && (
-                  <motion.div layoutId="navbar-indicator" className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-accent" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
                 )}
               </Link>
               <Link to="/developers" className={navLinkClass(isActive('/developers'))}>
                 DEVELOPERS
                 {isActive('/developers') && (
-                  <motion.div layoutId="navbar-indicator" className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-accent" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
                 )}
               </Link>
               <Link to="/team-requests" className={navLinkClass(isActive('/team-requests'))}>
                 INBOX
                 {isActive('/team-requests') && (
-                  <motion.div layoutId="navbar-indicator" className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-accent" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
                 )}
               </Link>
               <Link to="/hackathons" className={navLinkClass(isActive('/hackathons'))}>
                 MY HACKATHONS
                 {isActive('/hackathons') && (
-                  <motion.div layoutId="navbar-indicator" className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-accent" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
                 )}
               </Link>
               <Link to="/dashboard" className={navLinkClass(isActive('/dashboard'))}>
                 DASHBOARD
                 {isActive('/dashboard') && (
-                  <motion.div layoutId="navbar-indicator" className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-accent" transition={{ type: 'spring', stiffness: 300, damping: 30 }} />
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
                 )}
               </Link>
             </>
@@ -88,51 +120,83 @@ export default function Navbar() {
             <>
               <Link to="/" className={navLinkClass(isActive('/'))}>
                 HOME
+                {isActive('/') && (
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
+                )}
               </Link>
               <Link to="/discover" className={navLinkClass(isActive('/discover'))}>
                 DISCOVER HACKATHONS
+                {isActive('/discover') && (
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
+                )}
               </Link>
               <Link to="/developers" className={navLinkClass(isActive('/developers'))}>
                 DEVELOPERS
+                {isActive('/developers') && (
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
+                )}
               </Link>
               <Link to="/hackathons/new" className={navLinkClass(isActive('/hackathons/new'))}>
                 POST A HACKATHON
+                {isActive('/hackathons/new') && (
+                  <motion.div 
+                    layoutId="navbar-indicator" 
+                    className="absolute -bottom-[15px] left-0 right-0 h-[2px] bg-accent" 
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }} 
+                  />
+                )}
               </Link>
-              <a href="/#community" className={navLinkClass(isActive('/#community'))}>
-                COMMUNITY
-              </a>
             </>
           )}
         </nav>
 
-        {/* Right: Auth / Profile & Hamburger */}
-        <div className="flex items-center gap-3">
+        {/* Right: Auth / Profile Controls & Hamburger */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <Link 
                 to="/profile"
-                className="hidden sm:inline-block text-xs font-mono tracking-wider uppercase text-foreground border border-border px-3 py-1.5 hover:border-foreground transition-all bg-card"
+                className="inline-flex items-center gap-2 text-xs font-sans font-medium tracking-wide uppercase text-foreground border border-border bg-card px-2.5 sm:px-3 py-1.5 hover:border-accent hover:text-white transition-all rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                title="Account / Profile"
               >
-                {profile?.full_name || user.email}
+                <UserIcon size={12} className="text-accent shrink-0" />
+                <span className="truncate max-w-[120px] sm:max-w-[160px]">
+                  {profile?.full_name || profile?.username || user.email?.split('@')[0]}
+                </span>
               </Link>
+
               <button 
                 onClick={handleLogout}
-                className="hidden md:inline-block text-xs font-mono font-bold tracking-wider uppercase text-foreground hover:text-accent transition-colors duration-200"
+                className="hidden md:inline-flex items-center gap-1.5 text-xs font-sans font-semibold tracking-wide uppercase text-muted-foreground hover:text-accent transition-colors duration-200 px-2 py-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                title="Log Out"
               >
-                LOG OUT
+                <LogOut size={13} />
+                <span>LOG OUT</span>
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link 
                 to="/login" 
-                className="text-xs sm:text-sm font-mono font-bold tracking-wider uppercase text-foreground hover:text-accent transition-colors duration-200"
+                className="text-xs font-sans font-semibold tracking-wide uppercase text-text-secondary hover:text-foreground transition-colors px-2 py-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
               >
                 SIGN IN
               </Link>
               <Link 
                 to="/register" 
-                className="hidden sm:inline-block text-xs sm:text-sm font-mono font-bold tracking-wider uppercase bg-foreground text-background px-4 py-2 hover:bg-accent hover:text-white transition-all duration-200"
+                className="inline-flex items-center text-xs font-sans font-semibold tracking-wide uppercase bg-accent text-white px-3.5 py-1.5 hover:bg-hover-red transition-all duration-200 rounded-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
               >
                 GET STARTED
               </Link>
@@ -144,9 +208,9 @@ export default function Navbar() {
             type="button"
             onClick={() => setMobileMenuOpen(prev => !prev)}
             aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-            className="md:hidden p-2 text-foreground hover:text-accent transition-colors border border-border bg-card/60"
+            className="md:hidden p-1.5 text-foreground hover:text-accent transition-colors border border-border bg-card rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
@@ -158,10 +222,10 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden border-t border-border bg-background/98 backdrop-blur-md overflow-hidden"
+            transition={{ duration: 0.18 }}
+            className="md:hidden border-t border-border bg-[#090A0C]/98 backdrop-blur-lg overflow-hidden"
           >
-            <div className="flex flex-col py-2 px-2" onClick={() => setMobileMenuOpen(false)}>
+            <div className="flex flex-col py-1" onClick={() => setMobileMenuOpen(false)}>
               {user ? (
                 <>
                   <Link to="/discover" className={mobileNavLinkClass(isActive('/discover'))}>
@@ -180,13 +244,14 @@ export default function Navbar() {
                     DASHBOARD
                   </Link>
                   <Link to="/profile" className={mobileNavLinkClass(isActive('/profile'))}>
-                    MY PROFILE
+                    MY PROFILE ({profile?.full_name || 'ACCOUNT'})
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left py-3 px-4 font-mono text-sm font-bold tracking-wider uppercase text-accent hover:bg-accent/10 border-b border-border/60 transition-colors"
+                    className="w-full text-left py-3 px-4 font-sans text-xs font-semibold tracking-wide uppercase text-accent hover:bg-accent/10 border-b border-border/50 transition-colors flex items-center gap-2"
                   >
-                    LOG OUT
+                    <LogOut size={13} />
+                    <span>LOG OUT</span>
                   </button>
                 </>
               ) : (
@@ -203,9 +268,9 @@ export default function Navbar() {
                   <Link to="/hackathons/new" className={mobileNavLinkClass(isActive('/hackathons/new'))}>
                     POST A HACKATHON
                   </Link>
-                  <a href="/#community" className={mobileNavLinkClass(isActive('/#community'))}>
-                    COMMUNITY
-                  </a>
+                  <Link to="/login" className={mobileNavLinkClass(isActive('/login'))}>
+                    SIGN IN
+                  </Link>
                   <Link to="/register" className={mobileNavLinkClass(isActive('/register'))}>
                     GET STARTED
                   </Link>

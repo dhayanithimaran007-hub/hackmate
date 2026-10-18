@@ -5,13 +5,14 @@ import { profileService } from '../services/profileService';
 import type { Profile, Project, HackathonExperience } from '../types/database';
 import { 
   Globe, MapPin, GraduationCap, Building, Code2, Briefcase, 
-  ExternalLink, Mail, Phone, Copy, Check, Lock, ShieldCheck 
+  ExternalLink, Mail, Copy, Check, Lock, ArrowLeft 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatExternalUrl, sanitizeUsername } from '../utils/formatters';
+import EarthBackground from '../components/ui/EarthBackground';
 
 const getInitials = (name?: string | null) => {
-  if (!name || !name.trim()) return '';
+  if (!name || !name.trim()) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 1) {
     return parts[0].slice(0, 2).toUpperCase();
@@ -65,16 +66,25 @@ export default function PublicProfilePage() {
   }, [username]);
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center font-mono animate-pulse">LOADING PROFILE...</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
+        Retrieving developer credentials...
+      </div>
+    );
   }
 
   if (!profile) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <h2 className="heading-page mb-3 uppercase">PROFILE NOT FOUND</h2>
-        <p className="font-mono text-xs sm:text-sm text-muted-foreground mb-6">The user @{username} does not exist or has not set up their profile.</p>
-        <Link to="/developers" className="px-6 py-3 min-h-[46px] bg-foreground text-background font-mono text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-accent transition-colors inline-flex items-center justify-center">
-          DISCOVER DEVELOPERS
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background text-foreground">
+        <h2 className="text-xl font-bold uppercase mb-2">DEVELOPER NOT FOUND</h2>
+        <p className="font-sans text-xs sm:text-sm text-text-secondary mb-6">
+          The user @{username} does not exist or has not set up their profile.
+        </p>
+        <Link 
+          to="/developers" 
+          className="h-10 px-5 bg-accent text-white font-mono text-xs font-bold uppercase rounded-sm inline-flex items-center hover:bg-hover-red transition-all"
+        >
+          Discover Developers
         </Link>
       </div>
     );
@@ -92,365 +102,398 @@ export default function PublicProfilePage() {
   const isPhonePublic = profile.is_phone_public ?? (isOwner ? (user?.user_metadata?.is_phone_public ?? true) : true);
   const publicPhone = isPhonePublic ? rawPhone : (isOwner ? rawPhone : null);
 
+  const isLooking = profile.availability_status?.toLowerCase().includes('team') || 
+                    profile.availability_status === 'Looking for a team';
+  const isOpen = profile.availability_status?.toLowerCase().includes('open') || 
+                 profile.availability_status === 'Open to opportunities';
+
   return (
-    <div className="flex-1 w-full max-w-screen-xl mx-auto px-4 md:px-8 py-10 md:py-20">
-      {/* Header Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row gap-8 items-start mb-12 paper-panel p-6 sm:p-10 border border-border bg-card relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -z-10" />
+    <div className="flex-1 w-full flex flex-col relative overflow-hidden bg-background text-foreground">
+      {/* Subtle orbital curves */}
+      <EarthBackground variant="minimal" />
+
+      <div className="relative z-10 w-full max-w-screen-xl mx-auto px-4 md:px-8 py-8 md:py-14">
         
-        <div className="w-28 h-28 md:w-40 md:h-40 rounded-none border-2 border-foreground overflow-hidden flex-shrink-0 bg-background flex items-center justify-center relative">
-          {profile.avatar_url ? (
-            <img 
-              src={profile.avatar_url} 
-              alt={profile.full_name} 
-              className="w-full h-full object-cover" 
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                const fallback = e.currentTarget.parentElement?.querySelector('.avatar-fallback');
-                if (fallback) (fallback as HTMLElement).style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div className={`avatar-fallback w-full h-full items-center justify-center ${profile.avatar_url ? 'hidden' : 'flex'}`}>
-            <span className="font-display text-4xl md:text-5xl text-muted-foreground">
-              {getInitials(profile.full_name) || profile.full_name?.charAt(0) || '?'}
+        {/* Back Link */}
+        <Link 
+          to="/developers" 
+          className="inline-flex items-center gap-1.5 font-mono text-xs tracking-wider uppercase font-semibold text-text-secondary hover:text-accent transition-colors mb-6"
+        >
+          <ArrowLeft size={13} />
+          <span>BACK TO DEVELOPERS</span>
+        </Link>
+
+        {/* Profile Hero Header Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row gap-6 md:gap-8 items-start mb-10 p-6 md:p-8 rounded-sm border border-border bg-card relative"
+        >
+          {/* Avatar / Initials */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-sm border border-border bg-surface-elevated flex items-center justify-center font-mono font-bold text-2xl text-foreground shrink-0 overflow-hidden">
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={profile.full_name} 
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.parentElement?.querySelector('.avatar-fallback');
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <span className={`avatar-fallback ${profile.avatar_url ? 'hidden' : 'flex'}`}>
+              {getInitials(profile.full_name)}
             </span>
           </div>
-        </div>
-        
-        <div className="flex-1 flex flex-col">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-            <div>
-              <h1 className="heading-page uppercase leading-none">{profile.full_name}</h1>
-              <p className="font-mono text-accent text-base sm:text-lg mt-1.5 font-bold">
-                @{profile.username || sanitizeUsername(profile.full_name) || 'developer'}
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {publicEmail && (
-                <a 
-                  href={`mailto:${publicEmail}`} 
-                  title={`Email ${profile.full_name}: ${publicEmail}`} 
-                  className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center text-foreground"
-                >
-                  <Mail size={18} />
-                </a>
-              )}
-              {publicPhone && (
-                <a 
-                  href={`tel:${publicPhone}`} 
-                  title={`Call ${profile.full_name}: ${publicPhone}`} 
-                  className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center text-foreground"
-                >
-                  <Phone size={18} />
-                </a>
-              )}
-              {profile.github_url && (
-                <a href={formatExternalUrl(profile.github_url)} target="_blank" rel="noopener noreferrer" className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center">
-                  <ExternalLink size={18} />
-                </a>
-              )}
-              {profile.linkedin_url && (
-                <a href={formatExternalUrl(profile.linkedin_url)} target="_blank" rel="noopener noreferrer" className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center">
-                  <ExternalLink size={18} />
-                </a>
-              )}
-              {profile.portfolio_url && (
-                <a href={formatExternalUrl(profile.portfolio_url)} target="_blank" rel="noopener noreferrer" className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background flex items-center justify-center">
-                  <Globe size={18} />
-                </a>
-              )}
-              {profile.leetcode_url && (
-                <a href={formatExternalUrl(profile.leetcode_url)} target="_blank" rel="noopener noreferrer" className="p-2.5 min-h-[40px] min-w-[40px] border border-border hover:border-accent hover:text-accent transition-colors bg-background font-mono font-bold text-xs flex items-center justify-center">
-                  LC
-                </a>
-              )}
-            </div>
-          </div>
-
-          {profile.headline && (
-            <p className="font-sans text-base sm:text-lg mb-6 text-foreground/90 max-w-2xl leading-relaxed">
-              {profile.headline}
-            </p>
-          )}
-
-          <div className="flex flex-wrap gap-x-6 gap-y-3 font-mono text-xs sm:text-sm text-muted-foreground uppercase">
-            {profile.location && (
-              <div className="flex items-center gap-2"><MapPin size={16} /> {profile.location}</div>
-            )}
-            {profile.college && (
-              <div className="flex items-center gap-2"><Building size={16} /> {profile.college}</div>
-            )}
-            {profile.department && (
-              <div className="flex items-center gap-2"><GraduationCap size={16} /> {profile.department} ({profile.study_year})</div>
-            )}
-            {profile.availability_status && (
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${profile.availability_status === 'Looking for a team' ? 'bg-green-500' : profile.availability_status === 'Open to opportunities' ? 'bg-accent' : 'bg-red-500'}`} />
-                {profile.availability_status}
+          
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-tight text-foreground leading-tight truncate">
+                  {profile.full_name || 'Anonymous Builder'}
+                </h1>
+                <p className="font-mono text-xs sm:text-sm text-accent font-semibold mt-0.5">
+                  @{profile.username || sanitizeUsername(profile.full_name) || 'developer'}
+                </p>
               </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left Column: Bio, Skills, Roles */}
-        <div className="lg:col-span-1 space-y-10">
-          {profile.bio && (
-            <section>
-              <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase mb-4 flex items-center gap-2 border-b border-border pb-3">
-                <Briefcase size={16} /> ABOUT
-              </h3>
-              <p className="font-sans text-sm sm:text-base text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                {profile.bio}
-              </p>
-            </section>
-          )}
-
-          {/* Contact Section: Email & Phone */}
-          <section className="border border-border bg-card p-5 relative overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
-              <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center gap-2 text-foreground">
-                <Mail size={16} className="text-accent" /> CONTACT
-              </h3>
-              {isOwner ? (
-                <Link 
-                  to="/profile" 
-                  className="text-[10px] font-mono text-accent hover:underline uppercase font-bold"
-                >
-                  [ EDIT ]
-                </Link>
-              ) : (
-                <span className="text-[10px] font-mono text-muted-foreground uppercase flex items-center gap-1">
-                  <ShieldCheck size={12} className="text-accent" /> DIRECT REACH
-                </span>
-              )}
-            </div>
-
-            {(!publicEmail && !publicPhone) ? (
-              <div className="py-4 text-center font-mono text-xs text-muted-foreground uppercase">
-                {isOwner ? (
-                  <div className="space-y-2">
-                    <p>NO CONTACT DETAILS SHARED YET.</p>
-                    <Link 
-                      to="/profile" 
-                      className="inline-block px-3 py-1.5 bg-foreground text-background font-mono text-xs font-bold uppercase hover:bg-accent transition-colors"
-                    >
-                      ADD CONTACT DETAILS
-                    </Link>
-                  </div>
-                ) : (
-                  <p className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <Lock size={13} /> NO PUBLIC CONTACT INFORMATION SHARED.
-                  </p>
+              
+              {/* External Links Bar */}
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                {publicEmail && (
+                  <a 
+                    href={`mailto:${publicEmail}`} 
+                    title={`Email ${publicEmail}`}
+                    className="h-8 px-2.5 rounded-sm border border-border hover:border-accent hover:text-accent bg-surface-elevated flex items-center gap-1.5 font-mono text-xs text-text-secondary transition-colors"
+                  >
+                    <Mail size={13} />
+                    <span>EMAIL</span>
+                  </a>
+                )}
+                {profile.github_url && (
+                  <a 
+                    href={formatExternalUrl(profile.github_url)} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="h-8 px-2.5 rounded-sm border border-border hover:border-accent hover:text-accent bg-surface-elevated flex items-center gap-1.5 font-mono text-xs text-text-secondary transition-colors"
+                  >
+                    <ExternalLink size={13} />
+                    <span>GITHUB</span>
+                  </a>
+                )}
+                {profile.linkedin_url && (
+                  <a 
+                    href={formatExternalUrl(profile.linkedin_url)} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="h-8 px-2.5 rounded-sm border border-border hover:border-accent hover:text-accent bg-surface-elevated flex items-center gap-1.5 font-mono text-xs text-text-secondary transition-colors"
+                  >
+                    <ExternalLink size={13} />
+                    <span>LINKEDIN</span>
+                  </a>
+                )}
+                {profile.portfolio_url && (
+                  <a 
+                    href={formatExternalUrl(profile.portfolio_url)} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="h-8 px-2.5 rounded-sm border border-border hover:border-accent hover:text-accent bg-surface-elevated flex items-center gap-1.5 font-mono text-xs text-text-secondary transition-colors"
+                  >
+                    <Globe size={13} />
+                    <span>PORTFOLIO</span>
+                  </a>
+                )}
+                {isOwner && (
+                  <Link 
+                    to="/profile"
+                    className="h-8 px-3 rounded-sm bg-accent text-white font-mono text-xs font-bold uppercase tracking-wider hover:bg-hover-red transition-all flex items-center gap-1 shadow-sm ml-1"
+                  >
+                    <span>EDIT PROFILE</span>
+                  </Link>
                 )}
               </div>
-            ) : (
-              <div className="space-y-3.5">
-                {/* Email Section */}
-                {publicEmail && (
-                  <div className="p-3.5 bg-background border border-border group hover:border-accent transition-colors relative">
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="font-mono text-[10px] text-muted-foreground uppercase flex items-center gap-1.5 font-bold tracking-wider">
-                        <Mail size={12} className="text-accent" /> EMAIL
-                      </span>
-                      {isOwner && (
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 border uppercase font-bold ${
-                          isEmailPublic 
-                            ? 'border-accent text-accent bg-accent/10' 
-                            : 'border-muted-foreground/40 text-muted-foreground bg-muted/20'
-                        }`}>
-                          {isEmailPublic ? 'PUBLIC' : 'PRIVATE (YOU)'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <a 
-                        href={`mailto:${publicEmail}`}
-                        className="font-mono text-xs sm:text-sm text-foreground hover:text-accent font-semibold break-all transition-colors flex items-center gap-1.5 group-hover:underline"
-                        title={`Send email to ${publicEmail}`}
-                      >
-                        <span>{publicEmail}</span>
-                        <ExternalLink size={12} className="shrink-0 text-muted-foreground group-hover:text-accent transition-colors" />
-                      </a>
+            </div>
+
+            {profile.headline && (
+              <p className="text-xs sm:text-sm text-text-secondary font-sans leading-relaxed mb-4 max-w-2xl">
+                {profile.headline}
+              </p>
+            )}
+
+            {/* Quick Meta Tags */}
+            <div className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-muted-foreground uppercase pt-3 border-t border-border/50">
+              {profile.location && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={13} className="text-accent shrink-0" />
+                  <span>{profile.location}</span>
+                </div>
+              )}
+              {profile.college && (
+                <div className="flex items-center gap-1.5">
+                  <Building size={13} className="shrink-0" />
+                  <span>{profile.college}</span>
+                </div>
+              )}
+              {profile.department && (
+                <div className="flex items-center gap-1.5">
+                  <GraduationCap size={13} className="shrink-0" />
+                  <span>{profile.department} {profile.study_year ? `(${profile.study_year})` : ''}</span>
+                </div>
+              )}
+              {profile.availability_status && (
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    isLooking 
+                      ? 'bg-success' 
+                      : isOpen 
+                        ? 'bg-accent' 
+                        : 'bg-muted-foreground'
+                  }`} />
+                  <span className="text-text-secondary">{profile.availability_status}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* 2-Column Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column: Bio, Contact, Skills */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            {profile.bio && (
+              <div className="p-5 rounded-sm bg-card border border-border">
+                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Briefcase size={14} className="text-accent" />
+                  <span>ABOUT</span>
+                </h3>
+                <p className="font-sans text-xs sm:text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                  {profile.bio}
+                </p>
+              </div>
+            )}
+
+            {/* Contact Details Card */}
+            <div className="p-5 rounded-sm bg-card border border-border">
+              <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3">
+                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <Mail size={14} className="text-accent" />
+                  <span>DIRECT REACH</span>
+                </h3>
+                {isOwner && (
+                  <Link to="/profile" className="font-mono text-[11px] text-accent hover:underline uppercase">
+                    [ EDIT ]
+                  </Link>
+                )}
+              </div>
+
+              {!publicEmail && !publicPhone ? (
+                <p className="font-mono text-xs text-muted-foreground py-2 flex items-center gap-1.5">
+                  <Lock size={12} /> No public contact information shared.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {publicEmail && (
+                    <div className="p-2.5 rounded-sm bg-[#0E1013] border border-border/80 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="font-mono text-[10px] text-muted-foreground uppercase block">EMAIL</span>
+                        <a href={`mailto:${publicEmail}`} className="font-mono text-xs text-foreground hover:text-accent truncate block">
+                          {publicEmail}
+                        </a>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleCopyEmail(publicEmail)}
-                        className="p-1.5 border border-border hover:border-accent hover:text-accent transition-colors text-muted-foreground shrink-0 bg-card cursor-pointer"
-                        title="Copy email address"
+                        className="p-1.5 border border-border hover:border-accent text-text-secondary hover:text-accent rounded-sm shrink-0"
+                        title="Copy email"
                       >
-                        {copiedEmail ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+                        {copiedEmail ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Phone Section */}
-                {publicPhone && (
-                  <div className="p-3.5 bg-background border border-border group hover:border-accent transition-colors relative">
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="font-mono text-[10px] text-muted-foreground uppercase flex items-center gap-1.5 font-bold tracking-wider">
-                        <Phone size={12} className="text-accent" /> PHONE
-                      </span>
-                      {isOwner && (
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 border uppercase font-bold ${
-                          isPhonePublic 
-                            ? 'border-accent text-accent bg-accent/10' 
-                            : 'border-muted-foreground/40 text-muted-foreground bg-muted/20'
-                        }`}>
-                          {isPhonePublic ? 'PUBLIC' : 'PRIVATE (YOU)'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <a 
-                        href={`tel:${publicPhone}`}
-                        className="font-mono text-xs sm:text-sm text-foreground hover:text-accent font-semibold break-all transition-colors flex items-center gap-1.5 group-hover:underline"
-                        title={`Call ${publicPhone}`}
-                      >
-                        <span>{publicPhone}</span>
-                        <ExternalLink size={12} className="shrink-0 text-muted-foreground group-hover:text-accent transition-colors" />
-                      </a>
+                  {publicPhone && (
+                    <div className="p-2.5 rounded-sm bg-[#0E1013] border border-border/80 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="font-mono text-[10px] text-muted-foreground uppercase block">PHONE</span>
+                        <a href={`tel:${publicPhone}`} className="font-mono text-xs text-foreground hover:text-accent truncate block">
+                          {publicPhone}
+                        </a>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleCopyPhone(publicPhone)}
-                        className="p-1.5 border border-border hover:border-accent hover:text-accent transition-colors text-muted-foreground shrink-0 bg-card cursor-pointer"
-                        title="Copy phone number"
+                        className="p-1.5 border border-border hover:border-accent text-text-secondary hover:text-accent rounded-sm shrink-0"
+                        title="Copy phone"
                       >
-                        {copiedPhone ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+                        {copiedPhone ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Skills */}
+            {profile.skills && profile.skills.length > 0 && (
+              <div className="p-5 rounded-sm bg-card border border-border">
+                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Code2 size={14} className="text-accent" />
+                  <span>TECHNICAL SKILLS</span>
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.skills.map((skill, index) => (
+                    <span 
+                      key={index} 
+                      className="px-2 py-0.5 rounded-sm text-xs font-mono border border-border bg-surface-elevated text-text-secondary uppercase"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
-          </section>
 
-          {profile.skills && profile.skills.length > 0 && (
-            <section>
-              <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase mb-4 flex items-center gap-2 border-b border-border pb-3">
-                <Code2 size={16} /> SKILLS
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map((skill, index) => (
-                  <span key={index} className="px-3 py-1 text-xs font-mono border border-border bg-background uppercase">
-                    {skill}
-                  </span>
-                ))}
+            {/* Preferred Roles */}
+            {profile.preferred_roles && profile.preferred_roles.length > 0 && (
+              <div className="p-5 rounded-sm bg-card border border-border">
+                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Briefcase size={14} className="text-accent" />
+                  <span>DESIRED SQUAD ROLES</span>
+                </h3>
+                <div className="flex flex-col gap-1.5">
+                  {profile.preferred_roles.map((role, index) => (
+                    <div 
+                      key={index} 
+                      className="px-3 py-1.5 rounded-sm font-mono text-xs border-l-2 border-accent bg-surface-elevated text-foreground uppercase"
+                    >
+                      {role}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </section>
-          )}
+            )}
+          </div>
 
-          {profile.preferred_roles && profile.preferred_roles.length > 0 && (
-            <section>
-              <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase mb-4 flex items-center gap-2 border-b border-border pb-3">
-                <Briefcase size={16} /> PREFERRED ROLES
-              </h3>
-              <div className="flex flex-col gap-2">
-                {profile.preferred_roles.map((role, index) => (
-                  <div key={index} className="px-3.5 py-2.5 font-mono text-xs sm:text-sm border-l-2 border-accent bg-background uppercase">
-                    {role}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Right Column: Projects, Experience */}
-        <div className="lg:col-span-2 space-y-10">
-          
-          <section>
-            <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase mb-4 flex items-center gap-2 border-b border-border pb-3">
-              <Code2 size={16} /> PROJECTS & PORTFOLIO
-            </h3>
+          {/* Right Column: Projects & Hackathons */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
             
-            {projects.length === 0 ? (
-              <p className="font-mono text-xs sm:text-sm text-muted-foreground uppercase">NO PROJECTS LISTED YET.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {projects.map((project) => (
-                  <div key={project.id} className="border border-border p-5 sm:p-6 bg-card flex flex-col group hover:border-foreground transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <h4 className="heading-card uppercase group-hover:text-accent transition-colors">{project.title}</h4>
-                      {project.status && (
-                        <span className="text-xs font-mono border border-border px-2.5 py-1 uppercase">{project.status}</span>
-                      )}
-                    </div>
-                    {project.description && (
-                      <p className="font-sans text-sm sm:text-base text-foreground/80 mb-5 flex-1 leading-relaxed">
-                        {project.description}
-                      </p>
-                    )}
-                    
-                    {project.technologies && project.technologies.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-5 mt-auto">
-                        {project.technologies.map((tech, i) => (
-                          <span key={i} className="text-xs font-mono text-muted-foreground uppercase">
-                            #{tech}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-4 mt-auto pt-4 border-t border-border/50">
-                      {project.repository_url && (
-                        <a href={formatExternalUrl(project.repository_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider hover:text-accent transition-colors">
-                          <ExternalLink size={14} /> REPO
-                        </a>
-                      )}
-                      {project.demo_url && (
-                        <a href={formatExternalUrl(project.demo_url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider hover:text-accent transition-colors">
-                          <Globe size={14} /> LIVE DEMO
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+            {/* Projects */}
+            <div className="p-5 sm:p-6 rounded-sm bg-card border border-border">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-1.5">
+                <Code2 size={14} className="text-accent" />
+                <span>PROJECTS & PORTFOLIO</span>
+              </h3>
+              
+              {projects.length === 0 ? (
+                <p className="font-mono text-xs text-muted-foreground uppercase py-4">
+                  No public projects added yet.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {projects.map((project) => (
+                    <div 
+                      key={project.id} 
+                      className="p-4 rounded-sm border border-border/80 bg-[#0E1013] hover:border-accent/60 transition-colors flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <h4 className="text-sm font-semibold text-foreground truncate">{project.title}</h4>
+                          {project.status && (
+                            <span className="text-[10px] font-mono border border-border px-1.5 py-0.5 rounded-sm uppercase text-text-secondary">
+                              {project.status}
+                            </span>
+                          )}
+                        </div>
 
-          <section>
-            <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase mb-4 flex items-center gap-2 border-b border-border pb-3">
-              <Briefcase size={16} /> HACKATHON EXPERIENCE
-            </h3>
-            
-            {experiences.length === 0 ? (
-              <p className="font-mono text-xs sm:text-sm text-muted-foreground uppercase">NO HACKATHON EXPERIENCE LISTED YET.</p>
-            ) : (
-              <div className="space-y-6">
-                {experiences.map((exp) => (
-                  <div key={exp.id} className="border-l-2 border-border hover:border-accent transition-colors pl-6 py-2 relative">
-                    <div className="absolute -left-[5px] top-4 w-2 h-2 rounded-full bg-border group-hover:bg-accent transition-colors" />
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-                      <h4 className="heading-card uppercase">{exp.hackathon_name}</h4>
-                      {exp.event_date && (
-                        <span className="font-mono text-xs text-muted-foreground uppercase">{exp.event_date}</span>
+                        {project.description && (
+                          <p className="text-xs text-text-secondary leading-relaxed line-clamp-3 mb-3">
+                            {project.description}
+                          </p>
+                        )}
+                        
+                        {project.technologies && project.technologies.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {project.technologies.map((tech, i) => (
+                              <span key={i} className="text-[10px] font-mono text-muted-foreground">
+                                #{tech}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-2.5 border-t border-border/60 flex items-center gap-3 font-mono text-xs mt-auto">
+                        {project.repository_url && (
+                          <a 
+                            href={formatExternalUrl(project.repository_url)} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-accent hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink size={11} /> Repository
+                          </a>
+                        )}
+                        {project.demo_url && (
+                          <a 
+                            href={formatExternalUrl(project.demo_url)} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-foreground hover:text-accent flex items-center gap-1"
+                          >
+                            <Globe size={11} /> Live Demo
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Hackathon Experience */}
+            <div className="p-5 sm:p-6 rounded-sm bg-card border border-border">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-1.5">
+                <Briefcase size={14} className="text-accent" />
+                <span>HACKATHON TRACK RECORD</span>
+              </h3>
+              
+              {experiences.length === 0 ? (
+                <p className="font-mono text-xs text-muted-foreground uppercase py-4">
+                  No hackathon experience listed yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {experiences.map((exp) => (
+                    <div key={exp.id} className="p-3.5 rounded-sm bg-[#0E1013] border border-border/70 border-l-2 border-l-accent">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                        <h4 className="text-sm font-semibold text-foreground uppercase">{exp.hackathon_name}</h4>
+                        {exp.event_date && (
+                          <span className="font-mono text-[11px] text-muted-foreground">{exp.event_date}</span>
+                        )}
+                      </div>
+                      {exp.project_title && (
+                        <p className="text-xs text-text-secondary mb-1">
+                          Project: <span className="text-foreground font-medium">{exp.project_title}</span>
+                        </p>
+                      )}
+                      {exp.role && (
+                        <p className="font-mono text-xs text-muted-foreground uppercase">Role: {exp.role}</p>
+                      )}
+                      {exp.achievement && (
+                        <div className="inline-block px-2 py-0.5 rounded-sm bg-accent/10 text-accent border border-accent/20 font-mono text-[11px] font-bold uppercase mt-2">
+                          🏆 {exp.achievement}
+                        </div>
                       )}
                     </div>
-                    {exp.project_title && (
-                      <p className="font-sans text-sm sm:text-base font-bold mb-1">Project: {exp.project_title} {exp.project_url && <a href={exp.project_url} target="_blank" rel="noopener noreferrer" className="text-accent underline ml-2 text-sm">Link</a>}</p>
-                    )}
-                    {exp.role && (
-                      <p className="font-mono text-xs sm:text-sm text-foreground/80 mb-2 uppercase">Role: {exp.role}</p>
-                    )}
-                    {exp.achievement && (
-                      <div className="inline-block px-3 py-1.5 bg-accent/10 text-accent border border-accent/20 font-mono text-xs font-bold uppercase mt-2">
-                        🏆 {exp.achievement}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+
         </div>
       </div>
     </div>

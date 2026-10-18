@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { hackathonService } from '../services/hackathonService';
-import { ArrowRight, Search, Filter, Users, Calendar, MapPin } from 'lucide-react';
+import { ArrowRight, Search, Calendar, MapPin, Users, Clock, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDisplayDate } from '../utils/formatters';
-import { LightBeamButton } from '../components/ui/LightBeamButton';
+import EarthBackground from '../components/ui/EarthBackground';
 
 export default function DiscoverHackathonsPage() {
   const [hackathons, setHackathons] = useState<any[]>([]);
@@ -17,9 +17,9 @@ export default function DiscoverHackathonsPage() {
   const fetchHackathons = async (search?: string, mode?: string) => {
     setLoading(true);
     try {
-      const data = await hackathonService.getHackathons({ mode });
-      if (search) {
-        const s = search.toLowerCase();
+      const data = await hackathonService.getHackathons({ mode: mode === 'All' ? undefined : mode });
+      if (search && search.trim()) {
+        const s = search.toLowerCase().trim();
         setHackathons(data.filter((h: any) => 
           (h.title && h.title.toLowerCase().includes(s)) ||
           (h.profiles?.full_name && h.profiles.full_name.toLowerCase().includes(s)) ||
@@ -64,143 +64,199 @@ export default function DiscoverHackathonsPage() {
     fetchHackathons(searchTerm, modeFilter);
   };
 
-  const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setModeFilter(val);
-    fetchHackathons(searchTerm, val);
+  const handleModeChange = (mode: string) => {
+    setModeFilter(mode);
+    fetchHackathons(searchTerm, mode);
   };
 
   return (
-    <div className="w-full flex flex-col py-12 md:py-24">
+    <div className="flex-1 w-full flex flex-col relative overflow-hidden bg-background text-foreground">
+      {/* Restrained Orbital Earth Motif behind title & search */}
+      <EarthBackground variant="subtle-top" />
+
       {/* Header */}
-      <div className="max-w-screen-2xl mx-auto px-4 md:px-12 w-full mb-12">
-        <h1 className="heading-page mb-6">
-          DISCOVER<br/><span className="text-muted-foreground">HACKATHONS</span>
-        </h1>
-        
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 w-full max-w-4xl">
+      <div className="relative z-10 w-full max-w-screen-2xl mx-auto px-4 md:px-8 pt-10 pb-6 md:pt-14 md:pb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-foreground leading-tight">
+              DISCOVER <span className="text-accent">HACKATHONS.</span>
+            </h1>
+            <p className="mt-3 text-sm sm:text-base text-text-secondary font-sans leading-relaxed">
+              Find upcoming competitions, explore required team roles, and apply to open positions.
+            </p>
+          </div>
+
+          <Link
+            to="/hackathons/new"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-sm bg-accent text-white font-sans text-xs font-semibold uppercase tracking-wider hover:bg-hover-red transition-all shrink-0"
+          >
+            <Plus size={14} />
+            <span>POST HACKATHON</span>
+          </Link>
+        </div>
+
+        {/* Compact Search and Filtering Toolbar */}
+        <form 
+          onSubmit={handleSearch} 
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 p-2 bg-[#0E1013] border border-border rounded-sm"
+        >
+          {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
             <input 
               type="text" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="SEARCH BY NAME OR SKILLS..."
-              className="w-full bg-card border border-border h-[50px] px-4 pl-11 font-mono text-sm uppercase tracking-wider focus:outline-none focus:border-foreground transition-colors"
+              placeholder="Search by event title, college, skills, or location..."
+              className="w-full h-10 px-3 pl-10 bg-[#101216] border border-border/80 focus:border-accent rounded-sm outline-none font-sans text-xs sm:text-sm text-foreground placeholder:text-muted-foreground tracking-wide"
             />
           </div>
-          <div className="flex gap-4">
-            <div className="relative flex-1 sm:flex-initial">
-              <select 
-                value={modeFilter}
-                onChange={handleModeChange}
-                className="w-full h-[50px] bg-card border border-border px-5 font-mono text-sm uppercase tracking-wider focus:outline-none focus:border-foreground transition-colors appearance-none pr-11"
+
+          {/* Mode Filter Buttons */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-1 sm:py-0">
+            {['All', 'Online', 'Offline', 'Hybrid'].map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => handleModeChange(mode)}
+                className={`h-9 px-3 rounded-sm text-xs font-sans font-medium uppercase tracking-wider transition-all whitespace-nowrap ${
+                  modeFilter === mode
+                    ? 'bg-card text-foreground border border-accent/80 shadow-sm'
+                    : 'bg-transparent text-text-secondary hover:text-foreground border border-transparent'
+                }`}
               >
-                <option value="All">ALL MODES</option>
-                <option value="Online">ONLINE</option>
-                <option value="Offline">OFFLINE</option>
-                <option value="Hybrid">HYBRID</option>
-              </select>
-              <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
-            </div>
-            <LightBeamButton 
-              type="submit" 
-              size="md" 
-              className="h-[50px] shrink-0"
-            >
-              SEARCH
-            </LightBeamButton>
+                {mode === 'All' ? 'All Modes' : mode}
+              </button>
+            ))}
           </div>
+
+          {/* Submit Search Button */}
+          <button 
+            type="submit" 
+            className="h-10 px-5 bg-card border border-border hover:border-accent text-foreground hover:text-accent font-sans text-xs font-semibold uppercase tracking-wider rounded-sm transition-all shrink-0"
+          >
+            SEARCH
+          </button>
         </form>
       </div>
 
-      {/* Results */}
-      <div className="max-w-screen-2xl mx-auto px-4 md:px-12 w-full">
+      {/* Results Grid */}
+      <div className="relative z-10 flex-1 w-full max-w-screen-2xl mx-auto px-4 md:px-8 pb-16 pt-2">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-80 bg-card border border-border animate-pulse"></div>
+              <div key={i} className="h-56 bg-card border border-border rounded-sm animate-pulse p-5" />
             ))}
           </div>
         ) : hackathons.length === 0 ? (
-          <div className="w-full p-16 md:p-24 bg-card border border-border text-center flex flex-col items-center">
-            <Search className="w-10 h-10 text-muted-foreground mb-4" />
-            <h3 className="heading-section uppercase mb-3">NO HACKATHONS AVAILABLE YET</h3>
-            <p className="font-sans text-muted-foreground text-sm sm:text-base mb-6 max-w-md">Try adjusting your search criteria or be the first to organize one.</p>
-            <LightBeamButton 
+          <div className="w-full p-12 md:p-20 bg-card border border-border rounded-sm text-center flex flex-col items-center max-w-xl mx-auto my-8">
+            <Search className="w-8 h-8 text-muted-foreground mb-4 opacity-70" />
+            <h2 className="text-xl font-bold uppercase mb-2">No hackathons found</h2>
+            <p className="font-sans text-text-secondary text-sm mb-6 max-w-md">
+              No active hackathons matched your search criteria. Try modifying your filters or organize a new event.
+            </p>
+            <button 
               onClick={() => navigate('/hackathons/new')}
-              size="md"
+              className="inline-flex items-center gap-2 h-10 px-5 bg-accent text-white font-sans text-xs font-semibold uppercase tracking-wider rounded-sm hover:bg-hover-red transition-all"
             >
-              CREATE A HACKATHON
-            </LightBeamButton>
+              <Plus size={14} />
+              <span>POST A HACKATHON</span>
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {hackathons.map((h, i) => (
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.05 }}
                 key={h.id}
-                onClick={() => navigate(`/hackathons/${h.id}`)}
-                className="paper-panel group cursor-pointer p-6 md:p-8 flex flex-col h-full bg-card hover:bg-background transition-colors border border-border hover:border-foreground"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.3) }}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <span className="font-mono text-xs tracking-wider uppercase font-bold border border-foreground/20 px-2 py-1 group-hover:border-accent group-hover:text-accent transition-colors">
-                    {h.mode}
-                  </span>
-                  <div className="font-mono text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Users size={13} /> {h.team_size}/{h.max_team_size}
-                  </div>
-                </div>
-
-                <h3 className="heading-card mb-2 line-clamp-2 group-hover:text-accent transition-colors">
-                  {h.title}
-                </h3>
-                
-                {h.profiles && (
-                  <p className="font-mono text-xs tracking-wider text-foreground/70 uppercase mb-3 truncate">
-                    BY {h.profiles.full_name} {h.profiles.college ? `• ${h.profiles.college}` : ''}
-                  </p>
-                )}
-
-                <p className="font-sans text-muted-foreground text-sm line-clamp-2 mb-6 flex-1 leading-relaxed">
-                  {h.description}
-                </p>
-
-                <div className="flex flex-col gap-2.5 font-mono text-xs tracking-wider text-muted-foreground uppercase border-t border-border pt-5">
-                  <div className="flex items-center gap-2.5">
-                    <Calendar size={14} className="text-foreground shrink-0" />
-                    <span>EVENT: {formatDisplayDate(h.event_date)}</span>
-                  </div>
-                  
-                  {h.mode === 'Online' ? (
-                    <div className="flex items-center gap-2.5">
-                      <MapPin size={14} className="text-foreground shrink-0" />
-                      <span>ONLINE EVENT — NO PHYSICAL VENUE</span>
+                <Link
+                  to={`/hackathons/${h.id}`}
+                  className="group block h-full bg-card border border-border hover:border-accent/70 transition-all duration-200 rounded-sm p-4 sm:p-5 flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Top Status & Capacity Row */}
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-sans text-xs tracking-wider uppercase font-medium px-2 py-0.5 rounded-sm bg-surface-elevated border border-border text-text-secondary group-hover:border-accent/50 group-hover:text-accent transition-colors">
+                        {h.mode}
+                      </span>
+                      <div className="font-sans text-xs text-muted-foreground flex items-center gap-1.5 bg-surface-elevated/60 px-2 py-0.5 rounded-sm border border-border/50">
+                        <Users size={12} className="text-text-secondary" />
+                        <span>{h.team_size}/{h.max_team_size} members</span>
+                      </div>
                     </div>
-                  ) : (
-                    <>
-                      {(h.district || h.state) && (
-                        <div className="flex items-center gap-2.5">
-                          <MapPin size={14} className="text-foreground shrink-0" />
-                          <span className="truncate">{[h.district, h.state].filter(Boolean).join(', ')}</span>
-                        </div>
-                      )}
-                      {h.hosting_college && (
-                        <div className="flex items-center gap-2.5">
-                          <Users size={14} className="text-foreground shrink-0" />
-                          <span className="truncate">HOSTED BY {h.hosting_college}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
 
-                <div className="mt-6 flex items-center gap-2 text-foreground font-mono text-xs font-bold tracking-wider uppercase group-hover:text-accent transition-colors">
-                  <span>VIEW DETAILS</span> <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </div>
+                    {/* Title */}
+                    <h2 className="text-base sm:text-lg font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors leading-snug mb-1">
+                      {h.title}
+                    </h2>
+                    
+                    {/* Organizer byline */}
+                    {h.profiles && (
+                      <p className="font-sans text-xs tracking-wider text-muted-foreground uppercase mb-2.5 truncate">
+                        BY {h.profiles.full_name} {h.profiles.college ? `• ${h.profiles.college}` : ''}
+                      </p>
+                    )}
+
+                    {/* Short Description */}
+                    <p className="font-sans text-text-secondary text-xs sm:text-[13px] line-clamp-2 mb-3.5 leading-relaxed">
+                      {h.description}
+                    </p>
+
+                    {/* Skills Chips */}
+                    {h.skills && Array.isArray(h.skills) && h.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {h.skills.slice(0, 3).map((skill: string, idx: number) => (
+                          <span 
+                            key={idx}
+                            className="text-xs font-sans text-text-secondary bg-surface-elevated border border-border/70 px-2 py-0.5 rounded-sm tracking-wide truncate max-w-[100px]"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {h.skills.length > 3 && (
+                          <span className="text-xs font-sans text-muted-foreground px-1">
+                            +{h.skills.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Metadata Footer */}
+                  <div className="pt-3 border-t border-border/60 flex flex-col gap-2 mt-auto">
+                    <div className="flex items-center justify-between text-xs font-sans text-text-secondary">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Calendar size={12} className="text-accent shrink-0" />
+                        <span className="truncate">{formatDisplayDate(h.event_date)}</span>
+                      </div>
+                      
+                      {h.registration_deadline && (
+                        <div className="flex items-center gap-1.5 text-muted-foreground shrink-0">
+                          <Clock size={11} />
+                          <span>Deadline: {formatDisplayDate(h.registration_deadline)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-1.5 text-xs font-sans text-muted-foreground truncate">
+                        <MapPin size={11} className="shrink-0" />
+                        <span className="truncate">
+                          {h.mode === 'Online' 
+                            ? 'Virtual' 
+                            : [h.district, h.state].filter(Boolean).join(', ') || h.hosting_college || 'Offline'}
+                        </span>
+                      </div>
+
+                      <span className="inline-flex items-center gap-1 font-sans text-xs font-semibold text-text-secondary group-hover:text-accent transition-colors shrink-0">
+                        View details <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </div>

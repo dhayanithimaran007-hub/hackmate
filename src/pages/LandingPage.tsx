@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { LightBeamButton } from '../components/ui/LightBeamButton';
+import EarthBackground from '../components/ui/EarthBackground';
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -18,8 +19,8 @@ export default function LandingPage() {
   const mouseY = useMotionValue(0);
   const springX = useSpring(mouseX, { stiffness: 100, damping: 30 });
   const springY = useSpring(mouseY, { stiffness: 100, damping: 30 });
-  const textShiftX = useTransform(springX, [-1, 1], [-20, 20]);
-  const textShiftY = useTransform(springY, [-1, 1], [-20, 20]);
+  const textShiftX = useTransform(springX, [-1, 1], [-12, 12]);
+  const textShiftY = useTransform(springY, [-1, 1], [-12, 12]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -41,9 +42,8 @@ export default function LandingPage() {
         const progress = Math.min(scrollY / 500, 1);
         
         if (heroRef.current) {
-          heroRef.current.style.setProperty('--hero-y', `${scrollY * 0.4}px`);
-          heroRef.current.style.setProperty('--hero-opacity', `${1 - progress * 1.5}`);
-          heroRef.current.style.setProperty('--hero-scale', `${1 + progress * 0.1}`);
+          heroRef.current.style.setProperty('--hero-y', `${scrollY * 0.3}px`);
+          heroRef.current.style.setProperty('--hero-opacity', `${1 - progress * 1.3}`);
         }
       });
     };
@@ -70,12 +70,15 @@ export default function LandingPage() {
         onMouseMove={handleMouseMove}
         className="w-full min-h-[90vh] flex flex-col justify-center px-4 md:px-12 z-10 relative overflow-hidden"
         style={{
-          transform: 'translateY(var(--hero-y, 0)) scale(var(--hero-scale, 1))',
+          transform: 'translateY(var(--hero-y, 0))',
           opacity: 'var(--hero-opacity, 1)',
           willChange: 'transform, opacity'
         } as React.CSSProperties}
       >
-        <div className="w-full max-w-screen-2xl mx-auto flex flex-col justify-center relative z-10">
+        {/* Red Wireframe Earth in Hero Background */}
+        <EarthBackground variant="hero-right" />
+
+        <div className="w-full max-w-screen-2xl mx-auto flex flex-col justify-center relative z-10 py-12 md:py-20">
           
           <div className="flex flex-col items-center md:items-start w-full mb-8 pb-4 text-center md:text-left">
             <motion.h1 
@@ -84,33 +87,33 @@ export default function LandingPage() {
             >
               FIND YOUR <span className="text-accent">TEAM</span><br />
               BUILD THE FUTURE
-              {/* Subtle cursor-reactive accent dot */}
+              {/* Subtle accent marker */}
               <motion.span 
-                className="absolute w-3.5 h-3.5 bg-accent -right-4 bottom-6 opacity-90 hidden sm:inline-block"
+                className="absolute w-3 h-3 rounded-full bg-accent -right-4 bottom-5 opacity-90 hidden sm:inline-block shadow-[0_0_12px_#FF3548]"
                 animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
             </motion.h1>
             
-            <p className="mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl font-sans leading-relaxed">
+            <p className="mt-6 text-base sm:text-lg text-text-secondary max-w-2xl font-sans leading-relaxed">
               HackMate is the developer platform for discovering hackathons, finding compatible teammates, forming teams, and turning ideas into real projects.
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto self-center md:self-start mt-2 z-10">
             <LightBeamButton 
-              to="/hackathons/new" 
+              to="/discover" 
               size="lg"
               className="h-[52px]"
             >
-              <span>POST A HACKATHON</span>
+              <span>DISCOVER HACKATHONS</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </LightBeamButton>
             <Link 
-              to="/discover" 
+              to="/developers" 
               className="btn-hero-secondary"
             >
-              EXPLORE HACKATHONS
+              FIND TEAMMATES
             </Link>
           </div>
 
@@ -133,7 +136,7 @@ export default function LandingPage() {
         <div className="max-w-screen-xl mx-auto px-4 md:px-12 flex flex-col items-center relative z-10">
           
           <div className="text-center mb-16">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl leading-[0.95] tracking-tighter uppercase mb-4 text-foreground">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight uppercase mb-4 text-foreground">
               THE RIGHT TEAM<br /><span className="text-accent">CHANGES EVERYTHING.</span>
             </h2>
             <p className="font-sans text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -205,7 +208,7 @@ export default function LandingPage() {
             <div className="font-mono text-xs font-bold tracking-wider text-accent uppercase mb-4 flex items-center gap-2">
               <Activity className="w-4 h-4" /> TEAM INTELLIGENCE
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl uppercase tracking-tighter mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight leading-tight mb-4">
               Identify the missing link.
             </h2>
             <p className="font-sans text-base sm:text-lg text-muted-foreground mb-8 leading-relaxed">
@@ -285,7 +288,7 @@ export default function LandingPage() {
       {/* 5. HOW HACKMATE MATCHES YOU (Data flow visuals) */}
       <section className="w-full border-t border-border bg-background py-20 md:py-28 z-20 relative overflow-hidden">
         <div className="max-w-screen-xl mx-auto px-4 md:px-12 text-center">
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl uppercase mb-4 tracking-tighter">BUILT AROUND YOUR SKILLS.</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase mb-4 tracking-tight leading-tight">BUILT AROUND YOUR SKILLS.</h2>
           <p className="font-sans text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-16">
             HackMate analyzes technical abilities, project interests, and collaboration styles to surface the most optimal teams.
           </p>
@@ -323,7 +326,7 @@ export default function LandingPage() {
       <section className="w-full border-t border-border bg-card py-20 md:py-28 z-20 relative">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-12">
           <div className="mb-16">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl uppercase mb-3 tracking-tighter">FROM IDEA TO TEAM IN MINUTES.</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase mb-3 tracking-tight leading-tight">FROM IDEA TO TEAM IN MINUTES.</h2>
             <div className="w-16 h-1 bg-accent"></div>
           </div>
 
@@ -342,7 +345,7 @@ export default function LandingPage() {
                 initial={{opacity:0, y:20}} whileInView={{opacity:1, y:0}} viewport={{once:true}} transition={{delay:idx*0.1}}
                 className="relative z-10 flex flex-col md:items-center md:text-center group"
               >
-                <div className="w-16 h-16 bg-background border border-border flex items-center justify-center font-display text-2xl text-muted-foreground mb-6 group-hover:border-accent group-hover:text-accent transition-all duration-300">
+                <div className="w-16 h-16 bg-background border border-border flex items-center justify-center font-bold text-2xl text-muted-foreground mb-6 group-hover:border-accent group-hover:text-accent transition-all duration-300">
                   {step.num}
                 </div>
                 <h3 className="font-mono text-sm font-bold tracking-wider uppercase mb-2">{step.title}</h3>
@@ -358,7 +361,7 @@ export default function LandingPage() {
         <div className="max-w-screen-2xl mx-auto px-4 md:px-12">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
             <div>
-              <h2 className="font-display text-3xl sm:text-4xl md:text-5xl leading-[0.95] tracking-tighter uppercase mb-2 text-foreground">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight uppercase mb-2 text-foreground">
                 DISCOVER YOUR NEXT<br/><span className="text-muted-foreground">HACKATHON.</span>
               </h2>
             </div>
@@ -394,7 +397,7 @@ export default function LandingPage() {
               <div className="w-16 h-16 bg-accent/10 flex items-center justify-center mb-5">
                 <Compass className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="font-display text-2xl sm:text-3xl mb-3">OPPORTUNITY AWAITS</h3>
+              <h3 className="font-bold text-2xl sm:text-3xl mb-3">OPPORTUNITY AWAITS</h3>
               <p className="font-sans text-sm sm:text-base text-muted-foreground max-w-md mx-auto mb-6">
                 Discover hackathons that match your skills, interests, and preferred mode of collaboration.
               </p>
@@ -410,7 +413,7 @@ export default function LandingPage() {
       <section className="w-full border-t border-border bg-card py-20 md:py-28 z-20 relative">
         <div className="max-w-screen-xl mx-auto px-4 md:px-12 text-center">
           <div className="font-mono text-xs font-bold tracking-wider text-accent uppercase mb-4">PLATFORM CAPABILITIES</div>
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl uppercase mb-12 tracking-tighter">EVERYTHING YOU NEED TO HACK BETTER.</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase mb-12 tracking-tight leading-tight">EVERYTHING YOU NEED TO HACK BETTER.</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
@@ -439,7 +442,7 @@ export default function LandingPage() {
       <section id="community" className="w-full border-t border-border bg-background py-20 md:py-28 z-20 relative">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-12">
           <div className="mb-14 max-w-3xl">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl uppercase tracking-tighter mb-4">STOP BUILDING ALONE.</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight leading-tight mb-4">STOP BUILDING ALONE.</h2>
             <p className="font-sans text-base sm:text-lg text-muted-foreground leading-relaxed">
               Great hackathon ideas don't fail because of a lack of talent. They fail because the right people never find each other.
             </p>
@@ -479,7 +482,7 @@ export default function LandingPage() {
             <Network className="w-7 h-7 text-accent" />
           </motion.div>
           
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl leading-[1] tracking-tight uppercase mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight uppercase mb-6">
             YOUR TEAM IS<br />
             <span className="text-accent">OUT THERE.</span>
           </h2>
@@ -510,7 +513,7 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="w-full border-t border-border bg-background py-10 md:py-14 z-20 relative">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-12 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-6">
-          <div className="font-display text-2xl tracking-tight uppercase flex items-center gap-2 group cursor-pointer">
+          <div className="font-bold text-2xl tracking-tight uppercase flex items-center gap-2 group cursor-pointer">
             HACK<span className="text-accent transition-all duration-300">MATE</span>
           </div>
           

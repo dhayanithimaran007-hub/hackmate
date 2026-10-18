@@ -57,11 +57,11 @@ export class ErrorBoundary extends Component<Props, State> {
               </span>
             </div>
 
-            <h1 className="font-display text-3xl sm:text-4xl uppercase tracking-tight mb-3">
+            <h1 className="font-bold text-3xl sm:text-4xl uppercase tracking-tight mb-3 leading-tight">
               SOMETHING WENT WRONG
             </h1>
 
-            <p className="font-mono text-xs sm:text-sm text-muted-foreground uppercase tracking-wider mb-6">
+            <p className="font-sans text-xs sm:text-sm text-text-secondary mb-6 leading-relaxed">
               HackMate prevented an unhandled UI crash from displaying a blank screen. You can retry the operation or return to a safe page.
             </p>
 

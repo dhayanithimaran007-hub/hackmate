@@ -122,79 +122,79 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 md:gap-8 w-full max-w-4xl mx-auto paper-panel p-6 md:p-12">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 md:gap-8 w-full max-w-4xl mx-auto bg-card border border-border rounded-sm p-6 md:p-10 shadow-2xl">
       
       {error && (
-        <div className="font-mono text-xs uppercase tracking-wider text-accent border border-accent p-3.5">
+        <div className="font-sans text-xs uppercase tracking-wider text-accent border border-accent/40 bg-accent/10 p-3.5 rounded-sm font-semibold">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-2 border-b border-border pb-6 md:pb-8">
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">ORGANIZER NAME</label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-2 border-b border-border pb-6">
+        <div className="flex flex-col gap-1.5">
+          <label className="font-sans text-xs font-semibold tracking-wider uppercase text-text-secondary">ORGANIZER NAME</label>
           <input
             type="text"
             required
             value={organizerName}
             onChange={(e) => setOrganizerName(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-sm"
+            className="w-full bg-[#101216] border border-border focus:border-accent px-3.5 py-2.5 rounded-sm outline-none font-sans text-xs sm:text-sm text-foreground transition-colors"
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">ORGANIZER COLLEGE</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="font-sans text-xs font-semibold tracking-wider uppercase text-text-secondary">ORGANIZER COLLEGE</label>
           <input
             type="text"
             value={organizerCollege}
             onChange={(e) => setOrganizerCollege(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-sm"
+            className="w-full bg-[#101216] border border-border focus:border-accent px-3.5 py-2.5 rounded-sm outline-none font-sans text-xs sm:text-sm text-foreground transition-colors"
             placeholder="Not specified in profile"
           />
         </div>
         
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">CONTACT EMAIL (PUBLIC)</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="font-sans text-xs font-semibold tracking-wider uppercase text-text-secondary">CONTACT EMAIL (PUBLIC)</label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={15} />
             <input
               type="email"
               required
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 pl-11 focus:outline-none focus:border-foreground transition-colors font-sans text-sm"
+              className="w-full bg-[#101216] border border-border focus:border-accent px-3.5 py-2.5 pl-10 rounded-sm outline-none font-sans text-xs sm:text-sm text-foreground transition-colors"
               placeholder="hello@example.com"
             />
           </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">CONTACT PHONE (PUBLIC)</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="font-sans text-xs font-semibold tracking-wider uppercase text-text-secondary">CONTACT PHONE (PUBLIC)</label>
           <div className="relative">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={15} />
             <input
               type="tel"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 pl-11 focus:outline-none focus:border-foreground transition-colors font-sans text-sm"
+              className="w-full bg-[#101216] border border-border focus:border-accent px-3.5 py-2.5 pl-10 rounded-sm outline-none font-sans text-xs sm:text-sm text-foreground transition-colors"
               placeholder="+1234567890"
             />
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">HACKATHON NAME</label>
+      <div className="flex flex-col gap-1.5">
+        <label className="font-sans text-xs font-semibold tracking-wider uppercase text-text-secondary">HACKATHON NAME</label>
         <input
           type="text"
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-display text-xl sm:text-2xl uppercase"
+          className="w-full bg-[#101216] border border-border focus:border-accent px-3.5 py-2.5 rounded-sm outline-none font-sans text-base sm:text-lg font-semibold text-foreground uppercase tracking-wide"
           placeholder="E.G. AI INNOVATORS 2026"
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">DETAILED DESCRIPTION</label>
+        <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">DETAILED DESCRIPTION</label>
         <textarea
           required
           rows={5}
@@ -207,12 +207,12 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">MODE</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">MODE</label>
           <select
             required
             value={mode}
             onChange={(e) => setMode(e.target.value as any)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase tracking-wider appearance-none text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm font-medium uppercase tracking-wider appearance-none text-foreground"
           >
             {MODES.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
           </select>
@@ -222,54 +222,54 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
       {mode !== 'Online' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-2">
           <div className="flex flex-col gap-2">
-            <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">STATE</label>
+            <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">STATE</label>
             <input
               type="text"
               required
               value={state}
               onChange={(e) => setState(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">DISTRICT *</label>
+            <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">DISTRICT *</label>
             <input
               type="text"
               required
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
               placeholder="E.G. CHENNAI"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">HOSTING COLLEGE / INSTITUTION *</label>
+            <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">HOSTING COLLEGE / INSTITUTION *</label>
             <input
               type="text"
               required
               value={hostingCollege}
               onChange={(e) => setHostingCollege(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
               placeholder="E.G. RAJALAKSHMI ENGINEERING COLLEGE"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">CITY / TOWN</label>
+            <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">CITY / TOWN</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
               placeholder="OPTIONAL"
             />
           </div>
           <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">VENUE / ADDRESS</label>
+            <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">VENUE / ADDRESS</label>
             <input
               type="text"
               value={venue}
               onChange={(e) => setVenue(e.target.value)}
-              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+              className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
               placeholder="COLLEGE AUDITORIUM, MAIN BLOCK"
             />
           </div>
@@ -278,49 +278,49 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-2">
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">EVENT DATE</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">EVENT DATE</label>
           <input
             type="date"
             required
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">REGISTRATION DEADLINE</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">REGISTRATION DEADLINE</label>
           <input
             type="date"
             required
             value={registrationDeadline}
             onChange={(e) => setRegistrationDeadline(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">MAXIMUM TEAM SIZE</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">MAXIMUM TEAM SIZE</label>
           <input
             type="number"
             required
             min="1"
             value={maxTeamSize}
             onChange={(e) => setMaxTeamSize(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
             placeholder="4"
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">OPEN POSITIONS</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">OPEN POSITIONS</label>
           <input
             type="number"
             required
             min="0"
             value={openPositions}
             onChange={(e) => setOpenPositions(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
             placeholder="2"
           />
         </div>
@@ -328,22 +328,22 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">PREFERRED ROLES (COMMA SEPARATED)</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">PREFERRED ROLES (COMMA SEPARATED)</label>
           <input
             type="text"
             value={rolesStr}
             onChange={(e) => setRolesStr(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
             placeholder="FRONTEND DEVELOPER, AI ENGINEER"
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">REQUIRED SKILLS (COMMA SEPARATED)</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">REQUIRED SKILLS (COMMA SEPARATED)</label>
           <input
             type="text"
             value={skillsStr}
             onChange={(e) => setSkillsStr(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm text-foreground"
             placeholder="REACT, PYTHON, TENSORFLOW"
           />
         </div>
@@ -351,19 +351,19 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">EXPERIENCE LEVEL</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">EXPERIENCE LEVEL</label>
           <select
             required
             value={experienceLevel}
             onChange={(e) => setExperienceLevel(e.target.value)}
-            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-mono font-bold uppercase tracking-wider appearance-none text-sm"
+            className="w-full bg-background border border-border px-4 py-3 focus:outline-none focus:border-foreground transition-colors font-sans text-xs sm:text-sm font-medium uppercase tracking-wider appearance-none text-foreground"
           >
             <option value="" disabled>SELECT LEVEL</option>
             {EXPERIENCE_LEVELS.map(l => <option key={l} value={l}>{l.toUpperCase()}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs sm:text-sm font-bold tracking-wider uppercase text-muted-foreground">HACKATHON WEBSITE URL (OPTIONAL)</label>
+          <label className="font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase text-muted-foreground">HACKATHON WEBSITE URL (OPTIONAL)</label>
           <input
             type="url"
             value={hackathonUrl}
@@ -377,9 +377,9 @@ export function HackathonForm({ initialData, isEditing = false }: HackathonFormP
       <button
         type="submit"
         disabled={loading}
-        className="w-full mt-2 py-3.5 px-6 font-mono text-sm sm:text-base font-bold uppercase tracking-wider bg-foreground text-background hover:bg-accent hover:text-white transition-colors disabled:opacity-50 min-h-[50px] flex items-center justify-center"
+        className="w-full mt-3 h-11 font-sans text-xs sm:text-sm font-semibold uppercase tracking-wider bg-accent text-white hover:bg-hover-red transition-all disabled:opacity-50 flex items-center justify-center rounded-sm shadow-sm"
       >
-        {loading ? 'PROCESSING...' : isEditing ? 'UPDATE HACKATHON' : 'POST HACKATHON'}
+        {loading ? 'PROCESSING...' : isEditing ? 'UPDATE HACKATHON REQUIREMENTS' : 'PUBLISH HACKATHON EVENT'}
       </button>
     </form>
   );

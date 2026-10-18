@@ -1,16 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Activity, Zap, Search, Briefcase, RotateCcw } from 'lucide-react';
+import { ArrowRight, Activity, Zap, Search, Briefcase, RotateCcw, Users, Plus } from 'lucide-react';
 import { hackathonService } from '../services/hackathonService';
 import { applicationService } from '../services/applicationService';
 import { supabase } from '../lib/supabase';
-import { motion } from 'framer-motion';
 import { formatDisplayDate } from '../utils/formatters';
-import { LightBeamButton } from '../components/ui/LightBeamButton';
+import EarthBackground from '../components/ui/EarthBackground';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [hackathons, setHackathons] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,10 +120,7 @@ export default function DashboardPage() {
   const activeHackathons = Array.isArray(hackathons) ? hackathons.filter(h => h && h.status === 'OPEN').length : 0;
   const activeApplications = Array.isArray(applications) ? applications.filter(a => a && a.status === 'pending').length : 0;
   const acceptedApplicationsCount = Array.isArray(applications) ? applications.filter(a => a && a.status === 'accepted').length : 0;
-
   const totalMatches = stats.accepted + acceptedApplicationsCount;
-  
-  // What Needs Attention Logic
   const totalIncomingApps = stats.pending; 
 
   const formatEventDate = (date: Date) => {
@@ -136,7 +132,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Combine for timeline safely
   const posterEvents = (Array.isArray(hackathons) ? hackathons : [])
     .filter(h => h && h.created_at)
     .map((h, index) => {
@@ -171,191 +166,304 @@ export default function DashboardPage() {
 
   const timelineEvents = [...posterEvents, ...providerEvents]
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 10);
+    .slice(0, 8);
+
+  const displayName = profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'Builder';
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-background text-foreground">
+    <div className="flex-1 w-full flex flex-col relative overflow-hidden bg-background text-foreground">
       
-      {/* Editorial Header */}
-      <header className="w-full px-4 md:px-12 pt-16 pb-12 border-b border-border bg-card relative z-20">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-12">
-          
-          <div className="text-center md:text-left mb-8">
-            <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.6}}>
-              <h1 className="heading-page mb-3">
-                WHAT DO YOU WANT TO DO?
+      {/* Top Welcome Section with Subtle Partially Cropped Earth Background */}
+      <section className="relative z-10 w-full border-b border-border bg-[#0E1013]/70 overflow-hidden">
+        <EarthBackground variant="dashboard" />
+        
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-8 py-10 md:py-14 relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div>
+              <div className="font-sans text-xs text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                SYSTEM DASHBOARD
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-tight text-foreground leading-tight">
+                WELCOME BACK, <span className="text-accent">{displayName}</span>
               </h1>
-              <p className="font-mono text-xs sm:text-sm tracking-wider uppercase text-muted-foreground">
-                CHOOSE AN ACTION TO GET STARTED.
+              <p className="mt-2 text-xs sm:text-sm text-text-secondary font-sans max-w-xl leading-relaxed">
+                Track your active hackathon squads, manage incoming team requests, and discover new competitions.
               </p>
-            </motion.div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{delay:0.1}} className="h-full group flex flex-col p-6 md:p-10 border border-border bg-card hover:border-foreground transition-all duration-300 hover:-translate-y-1">
-              <div className="bg-background w-fit p-3.5 mb-6 group-hover:text-accent transition-colors border border-border">
-                <Briefcase className="w-7 h-7" />
-              </div>
-              <h2 className="font-display text-xl sm:text-2xl uppercase tracking-tight mb-2">POST A HACKATHON</h2>
-              <p className="font-sans text-sm text-muted-foreground mb-6 flex-1">"I am organizing a team and need members."</p>
-              <LightBeamButton 
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <Link 
                 to="/hackathons/new" 
-                size="md"
-                className="w-full min-h-[48px]"
-                innerClassName="justify-between px-5 w-full"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm bg-accent text-white font-sans text-xs font-semibold uppercase tracking-wider hover:bg-hover-red transition-all"
               >
-                <span>CREATE HACKATHON</span> <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </LightBeamButton>
-            </motion.div>
-            
-            <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{delay:0.2}} className="h-full group flex flex-col p-6 md:p-10 border border-border bg-card hover:border-foreground transition-all duration-300 hover:-translate-y-1">
-              <div className="bg-background w-fit p-3.5 mb-6 group-hover:text-accent transition-colors border border-border">
-                <Search className="w-7 h-7" />
-              </div>
-              <h2 className="font-display text-xl sm:text-2xl uppercase tracking-tight mb-2">FIND A TEAM</h2>
-              <p className="font-sans text-sm text-muted-foreground mb-6 flex-1">"I want to join a hackathon team."</p>
-              <LightBeamButton 
-                to="/discover" 
-                size="md"
-                className="w-full min-h-[48px]"
-                innerClassName="justify-between px-5 w-full"
+                <Plus size={13} />
+                <span>POST HACKATHON</span>
+              </Link>
+              <Link 
+                to="/developers" 
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm bg-card border border-border hover:border-accent text-text-secondary hover:text-foreground font-sans text-xs font-semibold uppercase tracking-wider transition-all"
               >
-                <span>DISCOVER HACKATHONS</span> <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </LightBeamButton>
-            </motion.div>
+                <Users size={13} />
+                <span>FIND TEAMMATES</span>
+              </Link>
+            </div>
           </div>
 
-          {/* Compact Overview */}
-          <motion.div 
-            initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.6, delay:0.3}}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 border-t border-border pt-12"
-          >
-            <div className="md:border-r border-border flex flex-col">
-              <span className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-2">MY ACTIVE HACKATHONS</span>
-              <span className="font-display text-4xl sm:text-5xl">{loading ? '-' : activeHackathons}</span>
+          {/* Useful Real Metric Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8 pt-8 border-t border-border/60">
+            <div className="p-4 sm:p-5 rounded-sm bg-card border border-border">
+              <span className="font-sans text-xs font-medium tracking-wider uppercase text-text-secondary block mb-1.5">
+                MY POSTED HACKATHONS
+              </span>
+              <span className="font-sans font-bold text-3xl sm:text-4xl text-foreground leading-none block">
+                {loading ? '—' : activeHackathons}
+              </span>
             </div>
-            <div className="md:border-r border-border flex flex-col md:pl-12">
-              <span className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-2">MY ACTIVE APPLICATIONS</span>
-              <span className="font-display text-4xl sm:text-5xl">{loading ? '-' : activeApplications}</span>
-            </div>
-            <div className="md:border-r border-border flex flex-col md:pl-12">
-              <span className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-2">APPS RECEIVED</span>
-              <span className="font-display text-4xl sm:text-5xl">{loading ? '-' : stats.applicationsReceived}</span>
-            </div>
-            <div className="flex flex-col md:pl-12">
-              <span className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-2">SUCCESSFUL TEAMS</span>
-              <span className="font-display text-4xl sm:text-5xl text-accent">{loading ? '-' : totalMatches}</span>
-            </div>
-          </motion.div>
-        </div>
-      </header>
 
-      <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 md:px-12 py-14">
+            <div className="p-4 sm:p-5 rounded-sm bg-card border border-border">
+              <span className="font-sans text-xs font-medium tracking-wider uppercase text-text-secondary block mb-1.5">
+                PENDING APPLICATIONS
+              </span>
+              <span className="font-sans font-bold text-3xl sm:text-4xl text-foreground leading-none block">
+                {loading ? '—' : activeApplications}
+              </span>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-sm bg-card border border-border">
+              <span className="font-sans text-xs font-medium tracking-wider uppercase text-text-secondary block mb-1.5">
+                INCOMING SQUAD APPS
+              </span>
+              <span className="font-sans font-bold text-3xl sm:text-4xl text-foreground leading-none block">
+                {loading ? '—' : stats.applicationsReceived}
+              </span>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-sm bg-card border border-border">
+              <span className="font-sans text-xs font-medium tracking-wider uppercase text-text-secondary block mb-1.5">
+                ACCEPTED MATCHES
+              </span>
+              <span className="font-sans font-bold text-3xl sm:text-4xl text-accent leading-none block">
+                {loading ? '—' : totalMatches}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Dashboard Content */}
+      <main className="relative z-10 flex-1 w-full max-w-screen-2xl mx-auto px-4 md:px-8 py-10">
         {loading ? (
-          <div className="flex justify-center py-28">
-            <span className="font-mono text-sm uppercase tracking-wider text-muted-foreground animate-pulse">Compiling Market Data...</span>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <span className="font-sans text-xs uppercase tracking-widest text-muted-foreground animate-pulse font-medium">
+              SYNCING HACKATHON & SQUAD DATA...
+            </span>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
-            <div className="font-mono text-xs uppercase tracking-wider text-accent border border-accent p-4 max-w-md">
+          <div className="flex flex-col items-center justify-center py-16 gap-4 text-center border border-border bg-card p-6 max-w-md mx-auto rounded-sm">
+            <div className="font-sans text-xs uppercase tracking-wider text-accent font-semibold">
               {error}
             </div>
             <button
               type="button"
               onClick={handleRetry}
-              className="py-3 px-6 bg-foreground text-background font-mono text-xs font-bold uppercase tracking-wider hover:bg-accent hover:text-white transition-colors flex items-center gap-2 min-h-[46px]"
+              className="py-2.5 px-5 bg-card border border-border hover:border-accent font-sans text-xs font-semibold uppercase tracking-wider text-foreground hover:text-accent transition-colors flex items-center gap-2 rounded-sm"
             >
-              <RotateCcw className="w-4 h-4" />
-              RETRY CONNECTION
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>RETRY CONNECTION</span>
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             
-            {/* Left Column: Timeline & Intelligence */}
-            <div className="lg:col-span-8 flex flex-col gap-14">
+            {/* Left 8 Cols: Attention & Activity Timeline */}
+            <div className="lg:col-span-8 flex flex-col gap-8">
               
-              {/* Attention Section */}
+              {/* Needs Attention Alert (Real Pending Applications) */}
               {totalIncomingApps > 0 && (
-                <section>
-                  <div className="border-b border-border pb-3 mb-6">
-                    <h2 className="heading-section flex items-center gap-3 text-accent">
-                      <Zap className="w-5 h-5 fill-accent" /> WHAT NEEDS YOUR ATTENTION
-                    </h2>
+                <div className="p-4 sm:p-5 bg-accent/10 border border-accent/40 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-sm bg-accent/20 flex items-center justify-center shrink-0">
+                      <Zap className="w-5 h-5 text-accent" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-foreground leading-snug">
+                        {totalIncomingApps} PENDING SQUAD {totalIncomingApps === 1 ? 'APPLICATION' : 'APPLICATIONS'}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-text-secondary mt-1 leading-normal">
+                        Candidates have applied to join your hackathon teams and are awaiting review.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-4">
-                    <Link to="/team-requests" className="p-6 bg-secondary border border-border flex justify-between items-center group hover:border-accent transition-colors duration-300">
-                      <div>
-                        <div className="font-sans text-lg font-bold mb-1 text-foreground group-hover:text-accent transition-colors">{totalIncomingApps} PENDING APPLICATIONS</div>
-                        <div className="font-mono text-xs tracking-wider uppercase text-muted-foreground">Review incoming team requests for your hackathons</div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-accent group-hover:translate-x-2 transition-transform" />
-                    </Link>
-                  </div>
-                </section>
+                  <Link 
+                    to="/team-requests" 
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-sm bg-accent text-white font-sans text-xs font-semibold uppercase tracking-wider hover:bg-hover-red transition-all shrink-0 self-start sm:self-auto"
+                  >
+                    <span>REVIEW INBOX</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                </div>
               )}
 
-              {/* Market Pulse Timeline */}
-              <section>
-                <div className="border-b border-border pb-3 mb-6 flex items-center justify-between">
-                  <h2 className="heading-section">RECENT ACTIVITY</h2>
-                  <Activity className="w-5 h-5 text-muted-foreground" />
+              {/* Action Pathways */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Link
+                  to="/hackathons/new"
+                  className="group p-5 bg-card border border-border hover:border-accent/70 rounded-sm transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-9 h-9 rounded-sm bg-surface-elevated border border-border flex items-center justify-center text-text-secondary group-hover:text-accent mb-3.5 transition-colors">
+                      <Briefcase size={16} />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground group-hover:text-accent transition-colors leading-snug mb-1.5">
+                      POST A HACKATHON
+                    </h3>
+                    <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+                      Create an event listing, define required capabilities, and build your team roster.
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center gap-1.5 font-sans text-xs font-semibold tracking-wide text-muted-foreground group-hover:text-accent transition-colors">
+                    <span>CREATE LISTING</span>
+                    <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </Link>
+
+                <Link
+                  to="/discover"
+                  className="group p-5 bg-card border border-border hover:border-accent/70 rounded-sm transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="w-9 h-9 rounded-sm bg-surface-elevated border border-border flex items-center justify-center text-text-secondary group-hover:text-accent mb-3.5 transition-colors">
+                      <Search size={16} />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground group-hover:text-accent transition-colors leading-snug mb-1.5">
+                      JOIN A HACKATHON TEAM
+                    </h3>
+                    <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+                      Discover open teams seeking your specific engineering or design skillset.
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center gap-1.5 font-sans text-xs font-semibold tracking-wide text-muted-foreground group-hover:text-accent transition-colors">
+                    <span>BROWSE TEAMS</span>
+                    <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </Link>
+              </div>
+
+              {/* Recent Activity Timeline */}
+              <section className="bg-card border border-border rounded-sm p-5 sm:p-6">
+                <div className="flex items-center justify-between pb-4 border-b border-border/60 mb-5">
+                  <div className="flex items-center gap-2">
+                    <Activity size={15} className="text-accent" />
+                    <h2 className="font-sans text-xs font-bold uppercase tracking-wider text-foreground">
+                      RECENT ACTIVITY LOG
+                    </h2>
+                  </div>
+                  <span className="font-sans text-xs text-muted-foreground uppercase tracking-wide">
+                    LIVE STATUS
+                  </span>
                 </div>
                 
                 {timelineEvents.length === 0 ? (
-                  <div className="py-14 border border-border border-dashed p-8 text-center bg-card flex flex-col items-center">
-                    <span className="font-mono text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">NO RECENT ACTIVITY DETECTED</span>
+                  <div className="py-10 text-center">
+                    <p className="font-sans text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                      NO RECENT ACTIVITY RECORDED YET.
+                    </p>
+                    <p className="text-xs sm:text-sm text-text-secondary mt-1.5">
+                      Apply to a hackathon or post an event to begin building activity.
+                    </p>
                   </div>
                 ) : (
-                  <div className="flex flex-col relative pl-6 border-l border-border ml-2">
-                    {timelineEvents.map((event, i) => (
-                      <motion.div 
-                        initial={{opacity:0, x:-20}} whileInView={{opacity:1, x:0}} viewport={{once:true}} transition={{delay: i * 0.1}}
-                        key={event.id} className="mb-8 relative group"
+                  <div className="space-y-3">
+                    {timelineEvents.map((event) => (
+                      <div 
+                        key={event.id}
+                        className="flex items-start justify-between gap-3 p-3.5 rounded-sm bg-[#0E1013] border border-border/50 hover:border-border transition-colors"
                       >
-                        <div className={`absolute -left-[30px] top-1 w-3 h-3 rounded-full border-2 border-background ${event.type === 'APPLICATION_SUBMITTED' ? 'bg-accent' : 'bg-foreground'}`}></div>
-                        <div className="font-mono text-xs tracking-wider uppercase text-muted-foreground mb-1.5 flex items-center gap-3">
-                          {formatEventDate(event.date)}
-                          <span className={`px-2 py-[2px] border ${event.type === 'APPLICATION_SUBMITTED' ? 'border-accent/30 text-accent bg-accent/5' : 'border-border bg-card'}`}>
-                            {event.type.replace('_', ' ')}
-                          </span>
-                        </div>
-                        <Link to={event.link} className="inline-block">
-                          <h3 className="font-display text-xl sm:text-2xl uppercase tracking-tight leading-tight group-hover:text-accent transition-colors">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 font-sans text-xs text-muted-foreground mb-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ${event.type === 'APPLICATION_SUBMITTED' ? 'bg-accent' : 'bg-success'}`} />
+                            <span className="uppercase font-medium tracking-wide">{event.type.replace('_', ' ')}</span>
+                            <span>•</span>
+                            <span>{formatEventDate(event.date)}</span>
+                          </div>
+                          <Link 
+                            to={event.link}
+                            className="text-xs sm:text-sm font-semibold text-foreground hover:text-accent transition-colors truncate block"
+                          >
                             {event.title}
-                          </h3>
-                        </Link>
-                        <div className="font-mono text-xs text-muted-foreground mt-1.5 font-bold tracking-wider">{event.meta}</div>
-                      </motion.div>
+                          </Link>
+                        </div>
+
+                        <span className="text-[11px] font-sans font-medium uppercase px-2 py-0.5 rounded-sm bg-surface-elevated border border-border text-text-secondary shrink-0 tracking-wide">
+                          {event.meta}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 )}
               </section>
             </div>
 
-            {/* Right Column: Quick Actions */}
-            <div className="lg:col-span-4 flex flex-col gap-8">
-              <section>
-                <div className="border-b border-border pb-3 mb-6">
-                  <h2 className="heading-section">QUICK LINKS</h2>
-                </div>
-                
-                <div className="flex flex-col gap-4">
-                  <Link to="/hackathons" className="p-5 bg-card border border-border hover:border-foreground transition-colors group flex flex-col gap-2 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-background transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-300 ease-out"></div>
-                    <h3 className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider group-hover:text-accent transition-colors flex justify-between items-center relative z-10">
-                      <span>VIEW MY HACKATHONS</span> <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </h3>
+            {/* Right 4 Cols: Navigation Shortcuts & Quick Tools */}
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              <div className="bg-card border border-border rounded-sm p-5">
+                <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
+                  PLATFORM SHORTCUTS
+                </h3>
+
+                <div className="flex flex-col gap-2">
+                  <Link 
+                    to="/hackathons" 
+                    className="p-3 bg-surface-elevated hover:bg-[#16191E] border border-border hover:border-accent/60 rounded-sm transition-all flex items-center justify-between text-xs font-sans font-medium tracking-wide text-text-secondary hover:text-foreground"
+                  >
+                    <span>MY HACKATHONS</span>
+                    <ArrowRight size={13} className="text-muted-foreground" />
                   </Link>
 
-                  <Link to="/my-applications" className="p-5 bg-card border border-border hover:border-foreground transition-colors group flex flex-col gap-2 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-background transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-300 ease-out"></div>
-                    <h3 className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider group-hover:text-accent transition-colors flex justify-between items-center relative z-10">
-                      <span>VIEW MY APPLICATIONS</span> <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </h3>
+                  <Link 
+                    to="/team-requests" 
+                    className="p-3 bg-surface-elevated hover:bg-[#16191E] border border-border hover:border-accent/60 rounded-sm transition-all flex items-center justify-between text-xs font-sans font-medium tracking-wide text-text-secondary hover:text-foreground"
+                  >
+                    <span>INBOX & SQUAD REQUESTS</span>
+                    <ArrowRight size={13} className="text-muted-foreground" />
+                  </Link>
+
+                  <Link 
+                    to="/my-applications" 
+                    className="p-3 bg-surface-elevated hover:bg-[#16191E] border border-border hover:border-accent/60 rounded-sm transition-all flex items-center justify-between text-xs font-sans font-medium tracking-wide text-text-secondary hover:text-foreground"
+                  >
+                    <span>MY APPLICATIONS</span>
+                    <ArrowRight size={13} className="text-muted-foreground" />
+                  </Link>
+
+                  <Link 
+                    to="/developers" 
+                    className="p-3 bg-surface-elevated hover:bg-[#16191E] border border-border hover:border-accent/60 rounded-sm transition-all flex items-center justify-between text-xs font-sans font-medium tracking-wide text-text-secondary hover:text-foreground"
+                  >
+                    <span>DEVELOPERS DIRECTORY</span>
+                    <ArrowRight size={13} className="text-muted-foreground" />
+                  </Link>
+
+                  <Link 
+                    to="/profile" 
+                    className="p-3 bg-surface-elevated hover:bg-[#16191E] border border-border hover:border-accent/60 rounded-sm transition-all flex items-center justify-between text-xs font-sans font-medium tracking-wide text-text-secondary hover:text-foreground"
+                  >
+                    <span>EDIT MY PROFILE</span>
+                    <ArrowRight size={13} className="text-muted-foreground" />
                   </Link>
                 </div>
-              </section>
+              </div>
+
+              {/* Developer Tip Box */}
+              <div className="p-5 rounded-sm bg-surface-elevated border border-border/80">
+                <span className="font-sans text-xs font-bold text-accent uppercase tracking-wider block mb-1.5">
+                  PRO TIP
+                </span>
+                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+                  Keep your technical skills and availability status updated in your profile so other teams can discover you in the directory.
+                </p>
+              </div>
             </div>
 
           </div>

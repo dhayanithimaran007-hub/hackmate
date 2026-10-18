@@ -41,7 +41,7 @@ function IntroAnimation({ onComplete }: { onComplete: () => void }) {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 1.05, opacity: 0, y: -10 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="font-display text-5xl md:text-7xl uppercase tracking-tighter text-center leading-[0.9]"
+        className="font-bold text-5xl md:text-7xl uppercase tracking-tight text-center leading-[1.05]"
       >
         HACK<br/><span className="text-accent">MATE</span>
       </motion.div>

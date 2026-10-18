@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Code2, Briefcase, Plus, Trash2, Globe, Check, ExternalLink, X, Mail, Phone, ShieldCheck } from 'lucide-react';
 import { formatExternalUrl, sanitizeUsername } from '../utils/formatters';
+import EarthBackground from '../components/ui/EarthBackground';
 
 const ROLES = [
   "Frontend Developer", "Backend Developer", "Full-Stack Developer", 
@@ -177,7 +178,7 @@ export default function ProfilePage() {
           ) : null}
           <div className={`profile-avatar-fallback w-full h-full items-center justify-center ${profileData.avatar_url ? 'hidden' : 'flex'}`}>
             {getInitials(profileData.full_name) ? (
-              <span className="font-display text-3xl md:text-4xl text-foreground tracking-wider">
+              <span className="font-sans font-bold text-2xl md:text-3xl text-foreground tracking-wide">
                 {getInitials(profileData.full_name)}
               </span>
             ) : (
@@ -632,79 +633,122 @@ export default function ProfilePage() {
   // X is now defined outside to prevent remounting
 
   return (
-    <div className="flex-1 w-full bg-background min-h-screen">
-      <div className="max-w-screen-xl mx-auto px-4 md:px-8 py-10 md:py-16">
+    <div className="flex-1 w-full bg-background min-h-screen text-foreground relative overflow-hidden">
+      {/* Subtle orbital curves */}
+      <EarthBackground variant="minimal" />
+
+      <div className="relative z-10 max-w-screen-xl mx-auto px-4 md:px-8 py-8 md:py-14">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
-            <h1 className="heading-page uppercase">EDIT PROFILE</h1>
-            <p className="font-mono text-xs sm:text-sm tracking-wider text-muted-foreground uppercase mt-1.5">Manage your HackMate identity and portfolio</p>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-foreground leading-tight">
+              EDIT <span className="text-accent">PROFILE.</span>
+            </h1>
+            <p className="font-sans text-xs sm:text-sm text-text-secondary mt-2 leading-relaxed">
+              Manage your developer identity, technical stack, and showcase projects
+            </p>
           </div>
           
-          <div className="flex items-center gap-4 bg-card border border-border p-3">
+          <div className="flex items-center gap-4 bg-card border border-border p-3 rounded-sm">
             <div className="flex flex-col">
-              <span className="font-mono text-xs uppercase font-bold text-muted-foreground">Completion</span>
-              <span className="font-mono font-bold text-accent">{calculateCompletion()}%</span>
+              <span className="font-mono text-[11px] uppercase font-bold text-muted-foreground">Profile Completion</span>
+              <span className="font-mono font-bold text-accent text-sm">{calculateCompletion()}%</span>
             </div>
-            <div className="w-24 h-2 bg-background border border-border">
-              <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${calculateCompletion()}%` }} />
+            <div className="w-24 h-2 bg-[#101216] border border-border rounded-full overflow-hidden">
+              <div className="h-full bg-accent transition-all duration-700" style={{ width: `${calculateCompletion()}%` }} />
             </div>
           </div>
         </div>
 
         {profileData.username && (
-          <div className="mb-8">
-            <Link to={`/profile/${profileData.username}`} className="inline-flex items-center gap-2 font-mono text-xs uppercase font-bold tracking-wider border border-border px-4 py-2 min-h-[40px] hover:border-accent hover:text-accent transition-colors bg-card">
-              <Globe size={14} /> View Public Profile
+          <div className="mb-6">
+            <Link 
+              to={`/profile/${profileData.username}`} 
+              className="inline-flex items-center gap-2 font-mono text-xs uppercase font-semibold tracking-wider border border-border px-3.5 py-2 rounded-sm hover:border-accent hover:text-accent transition-colors bg-card"
+            >
+              <Globe size={13} />
+              <span>VIEW PUBLIC PROFILE</span>
             </Link>
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Side Nav */}
-          <div className="w-full lg:w-64 flex flex-col gap-2 shrink-0">
-            <button onClick={() => setActiveTab('basic')} className={`text-left px-4 py-3 font-mono text-xs sm:text-sm uppercase tracking-wider transition-colors border-l-2 ${activeTab === 'basic' ? 'border-accent bg-accent/5 text-foreground font-bold' : 'border-transparent text-muted-foreground hover:bg-card hover:text-foreground'}`}>
+          <div className="w-full lg:w-60 flex flex-col gap-1.5 shrink-0">
+            <button 
+              onClick={() => setActiveTab('basic')} 
+              className={`text-left px-3.5 py-2.5 rounded-sm font-mono text-xs uppercase tracking-wider transition-all border ${
+                activeTab === 'basic' 
+                  ? 'border-accent bg-card text-foreground font-bold shadow-sm' 
+                  : 'border-transparent text-text-secondary hover:bg-card hover:text-foreground'
+              }`}
+            >
               Basic Details
             </button>
-            <button onClick={() => setActiveTab('skills')} className={`text-left px-4 py-3 font-mono text-xs sm:text-sm uppercase tracking-wider transition-colors border-l-2 ${activeTab === 'skills' ? 'border-accent bg-accent/5 text-foreground font-bold' : 'border-transparent text-muted-foreground hover:bg-card hover:text-foreground'}`}>
+            <button 
+              onClick={() => setActiveTab('skills')} 
+              className={`text-left px-3.5 py-2.5 rounded-sm font-mono text-xs uppercase tracking-wider transition-all border ${
+                activeTab === 'skills' 
+                  ? 'border-accent bg-card text-foreground font-bold shadow-sm' 
+                  : 'border-transparent text-text-secondary hover:bg-card hover:text-foreground'
+              }`}
+            >
               Skills & Links
             </button>
-            <button onClick={() => setActiveTab('projects')} className={`text-left px-4 py-3 font-mono text-xs sm:text-sm uppercase tracking-wider transition-colors border-l-2 ${activeTab === 'projects' ? 'border-accent bg-accent/5 text-foreground font-bold' : 'border-transparent text-muted-foreground hover:bg-card hover:text-foreground'}`}>
+            <button 
+              onClick={() => setActiveTab('projects')} 
+              className={`text-left px-3.5 py-2.5 rounded-sm font-mono text-xs uppercase tracking-wider transition-all border ${
+                activeTab === 'projects' 
+                  ? 'border-accent bg-card text-foreground font-bold shadow-sm' 
+                  : 'border-transparent text-text-secondary hover:bg-card hover:text-foreground'
+              }`}
+            >
               Projects
             </button>
-            <button onClick={() => setActiveTab('hackathons')} className={`text-left px-4 py-3 font-mono text-xs sm:text-sm uppercase tracking-wider transition-colors border-l-2 ${activeTab === 'hackathons' ? 'border-accent bg-accent/5 text-foreground font-bold' : 'border-transparent text-muted-foreground hover:bg-card hover:text-foreground'}`}>
-              Hackathon Exp
+            <button 
+              onClick={() => setActiveTab('hackathons')} 
+              className={`text-left px-3.5 py-2.5 rounded-sm font-mono text-xs uppercase tracking-wider transition-all border ${
+                activeTab === 'hackathons' 
+                  ? 'border-accent bg-card text-foreground font-bold shadow-sm' 
+                  : 'border-transparent text-text-secondary hover:bg-card hover:text-foreground'
+              }`}
+            >
+              Hackathon History
             </button>
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 paper-panel p-6 md:p-10 border border-border bg-card relative">
+          <div className="flex-1 p-6 md:p-8 border border-border bg-card rounded-sm relative">
             <AnimatePresence mode="wait">
               {message && (
                 <motion.div 
-                  initial={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: -15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className={`absolute top-0 left-0 right-0 p-3 font-mono text-xs uppercase font-bold text-center border-b ${message.type === 'success' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
+                  className={`absolute top-0 left-0 right-0 p-3 font-mono text-xs uppercase font-bold text-center border-b rounded-t-sm ${
+                    message.type === 'success' 
+                      ? 'bg-success/10 text-success border-success/30' 
+                      : 'bg-accent/10 text-accent border-accent/30'
+                  }`}
                 >
                   {message.text}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className={message ? 'mt-8' : ''}>
+            <div className={message ? 'mt-6' : ''}>
               {activeTab === 'basic' && renderBasicDetails()}
               {activeTab === 'skills' && renderSkillsLinks()}
               {activeTab === 'projects' && renderProjects()}
               {activeTab === 'hackathons' && renderHackathons()}
             </div>
 
-            <div className="mt-12 pt-6 border-t border-border flex justify-end">
+            <div className="mt-10 pt-5 border-t border-border flex justify-end">
               <button 
                 onClick={handleSaveProfile}
                 disabled={loading}
-                className="px-6 py-3 min-h-[48px] bg-foreground text-background font-mono text-sm font-bold uppercase tracking-wider hover:bg-accent hover:text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="h-10 px-6 rounded-sm bg-accent hover:bg-hover-red text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
               >
-                {loading ? 'Saving...' : <><Check size={16} /> Save Profile</>}
+                {loading ? 'SAVING CHANGES...' : <><Check size={14} /> SAVE PROFILE</>}
               </button>
             </div>
           </div>

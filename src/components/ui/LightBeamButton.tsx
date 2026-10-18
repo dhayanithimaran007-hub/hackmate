@@ -71,7 +71,7 @@ export const LightBeamButton = React.forwardRef<
     ...rest
   } = props as any;
 
-  const [c1 = '#FF454A', c2 = '#FF7579', c3 = '#FF2E34'] = gradientColors || [];
+  const [c1 = '#FF3548', c2 = '#FF5262', c3 = '#FF3548'] = gradientColors || [];
 
   const dynamicStyles: React.CSSProperties = {
     '--beam-c1': c1,
